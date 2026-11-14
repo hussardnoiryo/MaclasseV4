@@ -15,7 +15,8 @@ button,input,select,textarea{font:inherit;font-size:16px;color:inherit;touch-act
 html{-webkit-text-size-adjust:100%}
 body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
 #fab2{position:fixed;right:14px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 62px);z-index:20;border:0;border-radius:999px;padding:14px 20px;background:#f08c00;color:#fff;font-weight:800;box-shadow:0 6px 18px rgba(120,70,0,.35);cursor:pointer}
-@media print{#fab2{display:none!important}}
+#fab3{position:fixed;right:14px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 62px);z-index:20;border:2px solid #fff;border-radius:999px;padding:12px 18px;background:#0ca678;color:#fff;font-weight:800;box-shadow:0 6px 18px rgba(0,60,40,.35);cursor:pointer;display:none}
+@media print{#fab2,#fab3{display:none!important}}
 #fab{position:fixed;right:14px;bottom:max(14px,env(safe-area-inset-bottom));z-index:20;border-radius:999px;padding:14px 20px;background:#2b2d42;color:#fff;border:2px solid #fff;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.4);cursor:pointer}
 @media print{#fab{display:none}}
 .idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}.idx button{display:flex;flex-direction:column;align-items:center;gap:6px;border:2px solid transparent;border-radius:18px;background:#fff;padding:18px 8px;cursor:pointer;font-weight:700;color:var(--ink,#2b2f4a);box-shadow:0 2px 8px rgba(60,70,100,.1)}.idx button b{font-size:2.3rem;line-height:1}.idx button.on{background:var(--blue-l);border-color:var(--blue);color:#2a45b0}
@@ -164,6 +165,7 @@ pre.sql{background:#1e1e2e;color:#d6e0ff;border-radius:10px;padding:10px;font-si
 </head>
 <body>
 <div id="nav"></div>
+<button id="fab3" data-fab3="1" aria-label="Remonter en haut">⬆️ Haut</button>
 <button id="fab2" data-fab2="1" aria-label="Lecture / édition" style="display:none"></button>
 <button id="fab" data-go="home" aria-label="Index">☰ Index</button>
 <main id="main"></main>
@@ -407,8 +409,10 @@ function render() {
   else if (page === "cal") m.innerHTML = viewCal();
   else if (page === "todo") m.innerHTML = viewTodo();
   else m.innerHTML = viewSettings();
-  m.querySelectorAll("textarea.tdta").forEach(tdGrow);
+  m.querySelectorAll("textarea.tdta").forEach(tdGrow); fab3Paint();
 }
+function fab3Paint() { const b = $("#fab3"); if (b) b.style.display = (page === "sons" || page === "ecriture") && window.scrollY > 250 ? "block" : "none"; }
+window.addEventListener("scroll", fab3Paint, { passive: true });
 function tdGrow(e) { e.style.height = "auto"; e.style.height = e.scrollHeight + 2 + "px"; }
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches && e.target.matches("textarea.tdta")) { e.preventDefault(); e.target.blur(); } });
 
@@ -1457,7 +1461,7 @@ const actions = {
 
 /* ---------- Événements ---------- */
 document.addEventListener("click", ev => {
-  const t = ev.target.closest("[data-go],[data-cat],[data-cv],[data-nav],[data-dec2],[data-decm2],[data-inc],[data-dec],[data-decm],[data-lend],[data-lend2],[data-inc2],[data-tbl],[data-nt],[data-edit],[data-deval],[data-an],[data-act],[data-ds],[data-di],[data-dsj],[data-dsb],[data-add],[data-addsb],[data-addcp],[data-dcp],[data-dfield],[data-bdet],[data-tdim],[data-fmove],[data-fgo],[data-fan],[data-sort],[data-ptab],[data-ptog],[data-pmv],[data-pdel],[data-padd],[data-pab],[data-pev],[data-plink],[data-pall],[data-eexcl],[data-psv],[data-jadd],[data-jmv],[data-jdel],[data-jlink],[data-jldel],[data-jnav],[data-jday],[data-jsort],[data-sday],[data-jmode],[data-jcopy],[data-cmv],[data-cday],[data-cedit],[data-cdel],[data-cadd],[data-ccancel],[data-cimpdel],[data-pgo],[data-jgo],[data-fab2],[data-jcol],[data-jtcol],[data-top],[data-gofiche],[data-tdadd],[data-tdfold],[data-tddel],[data-tdmv],[data-tdnewbtn],[data-tdchk],[data-tdx],[data-tdclear],[data-tdsd],[data-tdst],[data-tdall],[data-tdmiss]");
+  const t = ev.target.closest("[data-go],[data-cat],[data-cv],[data-nav],[data-dec2],[data-decm2],[data-inc],[data-dec],[data-decm],[data-lend],[data-lend2],[data-inc2],[data-tbl],[data-nt],[data-edit],[data-deval],[data-an],[data-act],[data-ds],[data-di],[data-dsj],[data-dsb],[data-add],[data-addsb],[data-addcp],[data-dcp],[data-dfield],[data-bdet],[data-fab3],[data-tdim],[data-fmove],[data-fgo],[data-fan],[data-sort],[data-ptab],[data-ptog],[data-pmv],[data-pdel],[data-padd],[data-pab],[data-pev],[data-plink],[data-pall],[data-eexcl],[data-psv],[data-jadd],[data-jmv],[data-jdel],[data-jlink],[data-jldel],[data-jnav],[data-jday],[data-jsort],[data-sday],[data-jmode],[data-jcopy],[data-cmv],[data-cday],[data-cedit],[data-cdel],[data-cadd],[data-ccancel],[data-cimpdel],[data-pgo],[data-jgo],[data-fab2],[data-jcol],[data-jtcol],[data-top],[data-gofiche],[data-tdadd],[data-tdfold],[data-tddel],[data-tdmv],[data-tdnewbtn],[data-tdchk],[data-tdx],[data-tdclear],[data-tdsd],[data-tdst],[data-tdall],[data-tdmiss]");
   if (!t) return; const d = t.dataset;
   if (d.go) return go(d.go);
   if (d.cv) { cview[skey(page)] = d.cv; return render(); }
@@ -1505,6 +1509,7 @@ document.addEventListener("click", ev => {
     save(); return render();
   }
   if (d.gofiche) { ficheSel = d.gofiche; ficheTable = false; return go("fiches"); }
+  if (d.fab3 !== undefined) return window.scrollTo({ top: 0, behavior: "smooth" });
   if (d.top !== undefined) return page === "home" ? window.scrollTo({ top: 0, behavior: "smooth" }) : go("home");
   if (d.jtcol !== undefined) { S.jtcol = d.jtcol === "-" ? "" : d.jtcol; save(); render(); return; }
   if (d.jcol) { const [id, col] = d.jcol.split("|"), r = jfind(id); if (r) { r.b.color = col; save(); render(); } return; }
