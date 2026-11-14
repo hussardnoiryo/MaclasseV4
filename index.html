@@ -19,12 +19,12 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
 #fab{position:fixed;right:14px;bottom:max(14px,env(safe-area-inset-bottom));z-index:20;border-radius:999px;padding:14px 20px;background:#2b2d42;color:#fff;border:2px solid #fff;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.4);cursor:pointer}
 @media print{#fab{display:none}}
 .idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}.idx button{display:flex;flex-direction:column;align-items:center;gap:6px;border:2px solid transparent;border-radius:18px;background:#fff;padding:18px 8px;cursor:pointer;font-weight:700;color:var(--ink,#2b2f4a);box-shadow:0 2px 8px rgba(60,70,100,.1)}.idx button b{font-size:2.3rem;line-height:1}.idx button.on{background:var(--blue-l);border-color:var(--blue);color:#2a45b0}
-#nav{position:sticky;top:0;z-index:10;display:flex;gap:6px;justify-content:space-between;align-items:center;background:var(--card);padding:8px 10px;padding-top:max(8px,env(safe-area-inset-top));border-bottom:1px solid var(--line);box-shadow:0 2px 8px rgba(60,70,100,.08);overflow-x:auto}
+#nav{position:sticky;top:0;z-index:10;display:flex;gap:6px;justify-content:space-between;align-items:center;background:linear-gradient(115deg,#3b5bdb 0%,#7048e8 58%,#d6336c 120%);color:#fff;padding:9px 14px;padding-top:max(9px,env(safe-area-inset-top));border-radius:0 0 18px 18px;box-shadow:0 6px 18px rgba(80,60,200,.32);overflow-x:auto;cursor:pointer;-webkit-tap-highlight-color:transparent}#nav #sync{color:rgba(255,255,255,.88)}#nav #sync.err{color:#ffe066}
 #nav button{flex:1 0 auto;border:2px solid transparent;border-radius:13px;background:#f1f4f9;color:var(--muted);font-weight:700;padding:9px 6px;cursor:pointer;line-height:1.15;white-space:nowrap}
 #nav button.on{background:var(--blue-l);color:#2a45b0;border-color:var(--blue)}
 #sync{flex:none;align-self:center;font-size:.75rem;color:var(--muted);padding:0 6px;white-space:nowrap}
 #sync.err{color:var(--r);font-weight:700}
-main{max-width:980px;margin:0 auto;padding:12px 12px 150px}.ntt{font-weight:800;font-size:1.05rem;cursor:pointer;flex:1;padding:6px 0;-webkit-tap-highlight-color:transparent}.ntt::after{content:" ⌃";opacity:.35;font-size:.8em}
+main{max-width:980px;margin:0 auto;padding:12px 12px 150px}.ntt{font-weight:800;font-size:1.05rem;cursor:pointer;flex:1;padding:6px 0;-webkit-tap-highlight-color:transparent}.ntt{color:#fff;letter-spacing:.2px}.ntt::after{content:"  ⌂";opacity:.75;font-size:.9em}
 .card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(60,70,100,.08)}
 h2{font-size:1.15rem;margin-bottom:8px}h3{font-size:1rem;margin:4px 0 8px}
 .muted{color:var(--muted);font-size:.85rem}
@@ -109,7 +109,7 @@ th{font-size:.78rem;color:var(--muted);vertical-align:bottom}
 #sheetIn .jtab{width:100%;border-collapse:collapse;font-size:11px}#sheetIn .jtab td{padding:6px 7px;border-bottom:1px solid #d9dde8;vertical-align:top;font-size:11px}#sheetIn .jtab tr{break-inside:avoid}#sheetIn .jc{text-align:left}#sheetIn .jt{text-align:left;width:62px;font-weight:700;white-space:nowrap;color:#2a45b0}#sheetIn .jh{font-weight:800;font-size:12px}#sheetIn .jp{color:#777;font-size:10px}#sheetIn .jx{white-space:pre-wrap;margin-top:3px}#sheetIn .jl{margin-top:4px;font-size:10px}#sheetIn .jl a{color:#2a45b0}
 #sheetIn .jsep td{background:#eef1fb;text-align:center;font-weight:700;color:#2a45b0;padding:4px;font-size:10.5px}
 .tdst{display:inline-flex;gap:8px;align-items:center;padding:6px 12px;border:1px solid #d5daea;border-radius:999px;background:#fff;margin:3px;cursor:pointer}.tdst.ok{background:#dff5e6;border-color:#9bd7ae}
-.tdst input,.tdrow input[type=checkbox]{flex:none;width:22px;height:22px;margin:0}.tdrow{padding:3px 0;border-top:1px solid #eef0f5}.tdtxt{border:0!important;background:transparent!important;box-shadow:none!important}.tdtitle{font-weight:800;font-size:1.1rem}.tdrow.dn .tdtxt{text-decoration:line-through;color:#8a90a5}
+.tdst input,.tdrow input[type=checkbox]{flex:none;width:22px;height:22px;margin:0}.tdrow{padding:3px 0;border-top:1px solid #eef0f5}.tdtxt{border:0!important;background:transparent!important;box-shadow:none!important}.tdtitle{font-weight:800;font-size:1.1rem}@media(max-width:560px){.tdrow,.card>.row:has(.tdtitle){flex-wrap:wrap}.tdrow textarea.tdta{flex:1 1 calc(100% - 40px)}.tdrow .btn{margin-left:auto}.tdrow .btn+.btn{margin-left:0}.tdrow textarea.tdta+.btn{margin-left:auto}textarea.tdtitle{flex:1 1 100%;min-width:0}}textarea.tdta{resize:none;overflow:hidden;min-height:38px;line-height:1.3;font-family:inherit;word-break:break-word}.tdrow.dn .tdtxt{text-decoration:line-through;color:#8a90a5}
 .swc{width:30px;height:30px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #c9d2e4;cursor:pointer;padding:0;font-size:.8rem;color:#8a90a5}.swc.on{box-shadow:0 0 0 3px #2a45b0}
 .jread .jtab tr.jnow td{background:#fff1a8}.jread .jtab tr.jnow td.jt{background:#ffd43b;font-weight:800}.jread .jtab tr.jnow td:first-child{box-shadow:inset 6px 0 0 #f08c00}
 .jins{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:-4px 0 12px}.jins .btn{opacity:.85}
@@ -389,12 +389,12 @@ function viewHome() {
 }
 let lastPage = "";
 function go(p) {
-  if (p === "journal") jmode = "read"; if (p === "prog") { ptab = "per"; goPerDefault(); } if (p === "todo") tdOpen = {}; if (p === "fiches") fmode = "read"; if (p === "vie" || p === "matos") delete cview[p];   // affichages par défaut à l'arrivée
+  if (p === "journal") jmode = "read"; if (p === "prog") { ptab = "per"; goPerDefault(); } if (p === "todo") tdShut = {}; if (p === "fiches") fmode = "read"; if (p === "vie" || p === "matos") delete cview[p];   // affichages par défaut à l'arrivée
   if (p === "home") lastPage = page; page = p; try { localStorage.setItem(LS_PAGE, p); } catch (e) {} render(); window.scrollTo(0, 0); if (p === "journal") jScrollNow(); }
 function jScrollNow() { const r = document.querySelector("#main tr.jnow"); if (r) window.scrollTo({ top: Math.max(0, window.scrollY + r.getBoundingClientRect().top - 90), behavior: "instant" }); }   // ouvre le cahier journal en face du créneau en cours
 function render() {
   invalidate();
-  $("#nav").innerHTML = `<span class="ntt" data-top title="Remonter en haut de la page">${page === "home" ? "🏠 Ma classe CE1" : (PAGES.find(x => x[0] === page) || ["", ""])[1]}</span><span id="sync"></span>`; $("#fab").style.display = page === "home" ? "none" : ""; if (ptab !== "edit") progRead = ptab; { const f2 = $("#fab2"), on = page === "journal" || page === "prog" || (page === "fiches" && !ficheTable && S.students.length && S.fields.length > 0); f2.style.display = on ? "" : "none"; if (on) f2.textContent = (page === "journal" ? jmode === "read" : page === "fiches" ? fmode === "read" : ptab !== "edit") ? "✏️ Éditer" : "👁️ Lire"; }
+  $("#nav").dataset.top = "1"; $("#nav").innerHTML = `<span class="ntt" title="Retour à l'index">${page === "home" ? "🏠 Ma classe CE1" : (PAGES.find(x => x[0] === page) || ["", ""])[1]}</span><span id="sync"></span>`; $("#fab").style.display = page === "home" ? "none" : ""; if (ptab !== "edit") progRead = ptab; { const f2 = $("#fab2"), on = page === "journal" || page === "prog" || (page === "fiches" && !ficheTable && S.students.length && S.fields.length > 0); f2.style.display = on ? "" : "none"; if (on) f2.textContent = (page === "journal" ? jmode === "read" : page === "fiches" ? fmode === "read" : ptab !== "edit") ? "✏️ Éditer" : "👁️ Lire"; }
   paintSync();
   const m = $("#main");
   if (page === "home") m.innerHTML = viewHome();
@@ -407,7 +407,10 @@ function render() {
   else if (page === "cal") m.innerHTML = viewCal();
   else if (page === "todo") m.innerHTML = viewTodo();
   else m.innerHTML = viewSettings();
+  m.querySelectorAll("textarea.tdta").forEach(tdGrow);
 }
+function tdGrow(e) { e.style.height = "auto"; e.style.height = e.scrollHeight + 2 + "px"; }
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches && e.target.matches("textarea.tdta")) { e.preventDefault(); e.target.blur(); } });
 
 /* ---------- Compteurs ---------- */
 let cview = {}, ccat = {}, citem = {}, bdet = {};
@@ -621,19 +624,19 @@ function progSheet() {
 let calMonth = today().slice(0, 7), calSel = today(), calEdit = null;
 const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 /* ===================== À faire ===================== */
-let tdOpen = {};   // listes dépliées pendant cette visite (repliées par défaut à chaque arrivée sur la page)
+let tdShut = {};   // listes dépliées pendant cette visite (repliées par défaut à chaque arrivée sur la page)
 function tdBlock(b, i, n) {
   const st = S.students, isS = b.type === "stud", got = isS ? st.filter(s => b.got && b.got[s.id]).length : 0, open = b.items ? b.items.filter(x => !x.done) : [], done = b.items ? b.items.filter(x => x.done) : [];
   const badge = isS ? `<span class="cev" style="background:${got === st.length && st.length ? "#dff5e6" : "#fff1cc"}">${got}/${st.length}</span>` : `<span class="cev" style="background:${open.length ? "#fff1cc" : "#dff5e6"}">${open.length ? open.length + " à faire" : "✓ tout est fait"}</span>`;
-  const head = `<div class="row"><button class="btn sm pfold ${tdOpen[b.id] ? "on" : ""}" data-tdfold="${b.id}" title="Replier / déplier">${tdOpen[b.id] ? "−" : "+"}</button><input type="text" class="sp tdtitle" data-tdtitle="${b.id}" value="${esc(b.title || "")}" placeholder="${isS ? "Ex. Autorisation de sortie rendue" : "Titre de la liste (ex. Avant la rentrée)"}">${badge}<button class="btn sm" data-tdmv="${b.id}|-1" ${i === 0 ? "disabled" : ""} title="Monter">↑</button><button class="btn sm" data-tdmv="${b.id}|1" ${i === n - 1 ? "disabled" : ""} title="Descendre">↓</button><button class="btn sm dan" data-tddel="${b.id}" title="Supprimer cette liste">✕</button></div>`;
-  if (!tdOpen[b.id]) return `<div class="card">${head}</div>`;
+  const head = `<div class="row"><button class="btn sm pfold ${!tdShut[b.id] ? "on" : ""}" data-tdfold="${b.id}" title="Replier / déplier">${!tdShut[b.id] ? "−" : "+"}</button><textarea rows="1" class="sp tdtitle tdta" data-tdtitle="${b.id}" placeholder="${isS ? "Ex. Autorisation de sortie rendue" : "Titre de la liste (ex. Avant la rentrée)"}">${esc(b.title || "")}</textarea>${badge}<button class="btn sm" data-tdmv="${b.id}|-1" ${i === 0 ? "disabled" : ""} title="Monter">↑</button><button class="btn sm" data-tdmv="${b.id}|1" ${i === n - 1 ? "disabled" : ""} title="Descendre">↓</button><button class="btn sm dan" data-tddel="${b.id}" title="Supprimer cette liste">✕</button></div>`;
+  if (tdShut[b.id]) return `<div class="card">${head}</div>`;
   let body;
   if (isS) {
     const show = b.miss ? st.filter(s => !(b.got && b.got[s.id])) : st;
     body = `<div class="row" style="margin:8px 0 4px"><button class="btn sm" data-tdall="${b.id}|1">☑ Tout cocher</button><button class="btn sm" data-tdall="${b.id}|0">☐ Tout décocher</button><button class="btn sm ${b.miss ? "pri" : ""}" data-tdmiss="${b.id}">${b.miss ? "Afficher tous les élèves" : "Seulement ceux qui manquent"}</button></div>
       ${st.length ? (show.length ? show.map(s => `<label class="tdst ${b.got && b.got[s.id] ? "ok" : ""}"><input type="checkbox" data-tdst="${b.id}|${s.id}" ${b.got && b.got[s.id] ? "checked" : ""}>${esc(s.name)}</label>`).join("") : '<p class="muted">🎉 Tout le monde est passé.</p>') : '<p class="muted">Ajoute d\'abord tes élèves dans ⚙️ Paramètres.</p>'}`;
   } else {
-    body = `${open.map(x => `<div class="row tdrow"><input type="checkbox" data-tdchk="${b.id}|${x.id}" title="Fait"><input type="text" class="sp tdtxt" data-tdi="${b.id}|${x.id}" value="${esc(x.t)}"><button class="btn sm" data-tdx="${b.id}|${x.id}" title="Supprimer">✕</button></div>`).join("")}
+    body = `${open.map(x => `<div class="row tdrow"><input type="checkbox" data-tdchk="${b.id}|${x.id}" title="Fait"><textarea rows="1" class="sp tdtxt tdta" data-tdi="${b.id}|${x.id}">${esc(x.t)}</textarea><button class="btn sm" data-tdim="${b.id}|${x.id}|-1" title="Monter la tâche">↑</button><button class="btn sm" data-tdim="${b.id}|${x.id}|1" title="Descendre la tâche">↓</button><button class="btn sm" data-tdx="${b.id}|${x.id}" title="Supprimer">✕</button></div>`).join("")}
       <div class="row" style="margin-top:8px"><input type="text" class="sp" id="tdn-${b.id}" data-tdnew="${b.id}" placeholder="＋ Nouvelle tâche (Entrée pour ajouter)"><button class="btn pri" data-tdnewbtn="${b.id}">Ajouter</button></div>
       ${done.length ? `<div class="row" style="margin-top:8px"><button class="btn sm" data-tdsd="${b.id}">${b.sd ? "Masquer" : "Voir"} les ${done.length} fait${done.length > 1 ? "s" : ""}</button><button class="btn sm" data-tdclear="${b.id}">🧹 Vider les faits</button></div>${b.sd ? done.map(x => `<div class="row tdrow dn"><input type="checkbox" checked data-tdchk="${b.id}|${x.id}" title="Remettre à faire"><span class="sp tdtxt">${esc(x.t)}</span></div>`).join("") : ""}` : ""}`;
   }
@@ -1454,7 +1457,7 @@ const actions = {
 
 /* ---------- Événements ---------- */
 document.addEventListener("click", ev => {
-  const t = ev.target.closest("[data-go],[data-cat],[data-cv],[data-nav],[data-dec2],[data-decm2],[data-inc],[data-dec],[data-decm],[data-lend],[data-lend2],[data-inc2],[data-tbl],[data-nt],[data-edit],[data-deval],[data-an],[data-act],[data-ds],[data-di],[data-dsj],[data-dsb],[data-add],[data-addsb],[data-addcp],[data-dcp],[data-dfield],[data-bdet],[data-fmove],[data-fgo],[data-fan],[data-sort],[data-ptab],[data-ptog],[data-pmv],[data-pdel],[data-padd],[data-pab],[data-pev],[data-plink],[data-pall],[data-eexcl],[data-psv],[data-jadd],[data-jmv],[data-jdel],[data-jlink],[data-jldel],[data-jnav],[data-jday],[data-jsort],[data-sday],[data-jmode],[data-jcopy],[data-cmv],[data-cday],[data-cedit],[data-cdel],[data-cadd],[data-ccancel],[data-cimpdel],[data-pgo],[data-jgo],[data-fab2],[data-jcol],[data-jtcol],[data-top],[data-gofiche],[data-tdadd],[data-tdfold],[data-tddel],[data-tdmv],[data-tdnewbtn],[data-tdchk],[data-tdx],[data-tdclear],[data-tdsd],[data-tdst],[data-tdall],[data-tdmiss]");
+  const t = ev.target.closest("[data-go],[data-cat],[data-cv],[data-nav],[data-dec2],[data-decm2],[data-inc],[data-dec],[data-decm],[data-lend],[data-lend2],[data-inc2],[data-tbl],[data-nt],[data-edit],[data-deval],[data-an],[data-act],[data-ds],[data-di],[data-dsj],[data-dsb],[data-add],[data-addsb],[data-addcp],[data-dcp],[data-dfield],[data-bdet],[data-tdim],[data-fmove],[data-fgo],[data-fan],[data-sort],[data-ptab],[data-ptog],[data-pmv],[data-pdel],[data-padd],[data-pab],[data-pev],[data-plink],[data-pall],[data-eexcl],[data-psv],[data-jadd],[data-jmv],[data-jdel],[data-jlink],[data-jldel],[data-jnav],[data-jday],[data-jsort],[data-sday],[data-jmode],[data-jcopy],[data-cmv],[data-cday],[data-cedit],[data-cdel],[data-cadd],[data-ccancel],[data-cimpdel],[data-pgo],[data-jgo],[data-fab2],[data-jcol],[data-jtcol],[data-top],[data-gofiche],[data-tdadd],[data-tdfold],[data-tddel],[data-tdmv],[data-tdnewbtn],[data-tdchk],[data-tdx],[data-tdclear],[data-tdsd],[data-tdst],[data-tdall],[data-tdmiss]");
   if (!t) return; const d = t.dataset;
   if (d.go) return go(d.go);
   if (d.cv) { cview[skey(page)] = d.cv; return render(); }
@@ -1485,11 +1488,12 @@ document.addEventListener("click", ev => {
   if (d.dcp) { const [a, b, c] = d.dcp.split("|"); if (!confirm("Supprimer cette compétence ? Les évaluations gardent leur intitulé.")) return; const sb = subOf(subj(a), b); sb.comps = sb.comps.filter(x => x.id !== c); S.evals.forEach(e => { if (e.compId === c) e.compId = ""; }); save(); return render(); }
   if (d.addsb) { const i = $("#add-sb-" + d.addsb), v = i.value.trim(); if (!v) return; subj(d.addsb).subs.push({ id: uid(), name: v }); save(); return render(); }
   if (d.ptab) { ptab = d.ptab; return render(); }
-  if (d.tdadd || d.tdfold || d.tddel || d.tdmv || d.tdnewbtn || d.tdchk || d.tdx || d.tdclear || d.tdsd || d.tdst || d.tdall || d.tdmiss) {
+  if (d.tdim || d.tdadd || d.tdfold || d.tddel || d.tdmv || d.tdnewbtn || d.tdchk || d.tdx || d.tdclear || d.tdsd || d.tdst || d.tdall || d.tdmiss) {
     const T = S.todo, B = id => T.find(x => x.id === id);
-    if (d.tdadd) { const b = d.tdadd === "stud" ? { id: uid(), type: "stud", title: "", got: {}, open: true, miss: false } : { id: uid(), type: "list", title: "", items: [], open: true }; T.push(b); tdOpen[b.id] = true; save(); render(); setTimeout(() => { const e = document.querySelector(`[data-tdtitle="${b.id}"]`); e && e.focus(); }, 30); return; }
-    if (d.tdfold) { tdOpen[d.tdfold] = !tdOpen[d.tdfold]; }
+    if (d.tdadd) { const b = d.tdadd === "stud" ? { id: uid(), type: "stud", title: "", got: {}, open: true, miss: false } : { id: uid(), type: "list", title: "", items: [], open: true }; T.push(b); tdShut[b.id] = false; save(); render(); setTimeout(() => { const e = document.querySelector(`[data-tdtitle="${b.id}"]`); e && e.focus(); }, 30); return; }
+    if (d.tdfold) { tdShut[d.tdfold] = !tdShut[d.tdfold]; }
     else if (d.tddel) { const b = B(d.tddel); if ((b.title || (b.items && b.items.length) || Object.keys(b.got || {}).length) && !confirm("Supprimer la liste « " + (b.title || "sans titre") + " » ?")) return; S.todo = T.filter(x => x !== b); }
+    else if (d.tdim) { const [bid, iid, dir] = d.tdim.split("|"), b = B(bid), x = b.items.find(y => y.id === iid), op = b.items.filter(y => !y.done), i = op.indexOf(x), o = op[i + +dir]; if (!o) return; const a1 = b.items.indexOf(x), a2 = b.items.indexOf(o); b.items[a1] = o; b.items[a2] = x; }
     else if (d.tdmv) { const [id, dir] = d.tdmv.split("|"), i = T.findIndex(x => x.id === id), j = i + +dir; if (j < 0 || j >= T.length) return; [T[i], T[j]] = [T[j], T[i]]; }
     else if (d.tdnewbtn) { const b = B(d.tdnewbtn), inp = document.getElementById("tdn-" + b.id), t = inp.value.trim(); if (!t) return inp.focus(); b.items.push({ id: uid(), t, done: false }); save(); render(); setTimeout(() => { const e = document.getElementById("tdn-" + b.id); e && e.focus(); }, 30); return; }
     else if (d.tdchk || d.tdx) { const [bid, iid] = (d.tdchk || d.tdx).split("|"), b = B(bid), x = b.items.find(y => y.id === iid); if (d.tdx) b.items = b.items.filter(y => y !== x); else x.done = !x.done; }
@@ -1501,7 +1505,7 @@ document.addEventListener("click", ev => {
     save(); return render();
   }
   if (d.gofiche) { ficheSel = d.gofiche; ficheTable = false; return go("fiches"); }
-  if (d.top !== undefined) return window.scrollTo({ top: 0, behavior: "smooth" });
+  if (d.top !== undefined) return page === "home" ? window.scrollTo({ top: 0, behavior: "smooth" }) : go("home");
   if (d.jtcol !== undefined) { S.jtcol = d.jtcol === "-" ? "" : d.jtcol; save(); render(); return; }
   if (d.jcol) { const [id, col] = d.jcol.split("|"), r = jfind(id); if (r) { r.b.color = col; save(); render(); } return; }
   if (d.fab2 !== undefined) {   // bascule lecture ↔ édition en gardant la même position à l'écran (ancrée sur le bloc / la compétence visible)
@@ -1655,6 +1659,7 @@ document.addEventListener("change", ev => {
   }
 });
 document.addEventListener("input", ev => {
+  if (ev.target.classList && ev.target.classList.contains("tdta")) tdGrow(ev.target);
   if (ev.target.dataset.tdtitle) { const b = S.todo.find(x => x.id === ev.target.dataset.tdtitle); if (b) { b.title = ev.target.value; save(); } return; }
   if (ev.target.dataset.tdi) { const [bid, iid] = ev.target.dataset.tdi.split("|"), b = S.todo.find(x => x.id === bid), x = b && b.items.find(y => y.id === iid); if (x) { x.t = ev.target.value; save(); } return; }
   if (ev.target.dataset.jtitle !== undefined) { const v = ev.target.value; if (v.trim()) S.jtitles[jdate] = v; else { delete S.jtitles[jdate]; if (jTitle(jdate)) S.jtitles[jdate] = ""; } save(); return; }
