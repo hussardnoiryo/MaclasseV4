@@ -135,7 +135,7 @@ th{font-size:.78rem;color:var(--muted);vertical-align:bottom}
 details summary{cursor:pointer;font-weight:700;padding:6px 0}
 pre.sql{background:#1e1e2e;color:#d6e0ff;border-radius:10px;padding:10px;font-size:.72rem;overflow:auto;max-height:320px;white-space:pre}
 .jread tr[data-jgo]{cursor:pointer}.jread tr[data-jgo]:hover td{background:#f3f6ff}
-.goedit{border:0;background:none;cursor:pointer;font-size:.8em;opacity:.55;padding:0 4px}.goedit:hover{opacity:1}#sheetIn .goedit{display:none}
+[data-pgo]:hover{background:rgba(59,91,219,.07)}
 @keyframes flash{0%,65%{box-shadow:0 0 0 3px #ffd600;background:#fffbe0}100%{box-shadow:none}}.flash{animation:flash 1.8s}
 #sheet{display:none}
 @media print{
@@ -476,7 +476,7 @@ function goPerDefault() {
   pfPer = keys.has(p) ? p : "all";
 }
 function goTo(id) { setTimeout(() => { const e = document.getElementById(id); if (!e) return; e.scrollIntoView({ block: "center", behavior: "smooth" }); e.classList.add("flash"); setTimeout(() => e.classList.remove("flash"), 1900); }, 30); }
-const goBtn = (a, b = "", c = "") => `<button class="goedit" data-pgo="${a}|${b}|${c}" title="Modifier dans l'onglet ✏️ Modifier">✏️</button>`;
+const goAt = (a, b = "", c = "") => `data-pgo="${a}|${b}|${c}" title="Cliquer pour modifier" style="cursor:pointer"`;   // un clic ouvre l'édition à cet endroit
 const compEvals = c => S.evals.filter(e => e.compId === c.id && Object.values(e.grades || {}).some(v => typeof v === "number"));
 const periodsOf = c => [...new Set((String(c.per || "").match(/P\s*[1-9]/gi) || []).map(x => "P" + x.replace(/\D/g, "")))].sort();
 const fixUrl = u => { u = String(u || "").trim(); return !u || /^[a-z][a-z0-9+.-]*:/i.test(u) ? u : "https://" + u.replace(/^\/+/, ""); };   // « www.site.fr » sans https:// devenait un lien relatif (cassé, notamment dans le PDF)
@@ -567,7 +567,7 @@ function suiviClassCard() {
 function progSuivi() {
   const gs = groupsOf().filter(g => g.suivi), sorted = [...S.students].sort(byName);
   const body = gs.map(g => { const E = seriesEvals(g), c = suiviClass(g);
-    return `<section class="psec"><h2>${esc(g.name)} ${goBtn(g.sj.id, g.sb.id, g.cs[0].id)} <small style="font-weight:500;color:#777">${esc(g.sj.name)} › ${esc(g.sb.name)} · ${periodsLabel(g)}</small></h2>
+    return `<section class="psec"><h2 ${goAt(g.sj.id, g.sb.id, g.cs[0].id)}>${esc(g.name)} <small style="font-weight:500;color:#777">${esc(g.sj.name)} › ${esc(g.sb.name)} · ${periodsLabel(g)}</small></h2>
       <div class="muted" style="margin-bottom:6px">${E.length} évaluation${E.length > 1 ? "s" : ""} rattachée${E.length > 1 ? "s" : ""}${g.an ? " · affichée dans l'analyse" : ""}</div>
       ${E.length ? `<table class="ptab"><thead><tr><th>Élève</th><th>1re évaluation</th><th>Dernière évaluation</th><th>Évolution</th></tr></thead><tbody>${sorted.map(s => { const r = suiviOf(g, s.id, E); return `<tr><td>${esc(s.name)}</td>${r ? `<td>${pl2(r.v1)} <small class="muted">${frDate(r.d1)}</small></td><td>${r.v2 !== null ? `${pl2(r.v2)} <small class="muted">${frDate(r.d2)}</small>` : "–"}</td><td>${dlt(r.delta)}</td>` : '<td>–</td><td>–</td><td>–</td>'}</tr>`; }).join("")}<tr><td><b>Classe</b></td><td>${pl2(c.v1)}</td><td>${pl2(c.v2)}</td><td>${dlt(c.delta)}</td></tr></tbody></table>` : `<p class="muted">Aucune évaluation rattachée à cette compétence pour le moment (choisis-la dans 📒 Notes).</p>`}</section>`; }).join("");
   return { title: "Suivi annuel des compétences", filter: "", body: body || '<p class="muted">Aucun suivi activé. Dans « ✏️ Modifier », une compétence présente sur plusieurs périodes (ex. P1 P2 P3) a un bouton « 📈 Suivi annuel ».</p>', nolegend: true };
@@ -602,8 +602,8 @@ const legend = `<span class="pst pno">Non abordée</span> <span class="pst pab">
 function progMatiere() {
   const list = pfSubj === "all" ? S.subjects : S.subjects.filter(s => s.id === pfSubj);
   const body = list.map(sj => { const st = progStats(sj);
-    return `<section class="psec"><h2>${esc(sj.name)} ${goBtn(sj.id)}</h2><div class="muted" style="margin-bottom:6px">${st.n ? `${st.n} compétences · ${st.ab} abordées · ${st.ev} évaluées` : "Aucune compétence"} </div>
-      ${sj.subs.map(sb => `<h3>${esc(sb.name)} ${goBtn(sj.id, sb.id)}</h3>${(sb.comps || []).length ? `<table class="ptab"><thead><tr><th>Compétence</th><th style="width:5.5em">Période</th><th >Statut</th></tr></thead><tbody>${sb.comps.map(c => `<tr class="r-${compStatus(c).st}"><td>${esc(c.name)}${lk(c)} ${goBtn(sj.id, sb.id, c.id)}</td><td>${esc(c.per || "")}</td><td>${keysOf(c).map(p => pPill(c, p)).join(" ")}</td></tr>`).join("")}</tbody></table>` : `<p class="muted">Aucune compétence.</p>`}`).join("") || '<p class="muted">Aucune sous-matière.</p>'}</section>`; }).join("");
+    return `<section class="psec"><h2 ${goAt(sj.id)}>${esc(sj.name)}</h2><div class="muted" style="margin-bottom:6px">${st.n ? `${st.n} compétences · ${st.ab} abordées · ${st.ev} évaluées` : "Aucune compétence"} </div>
+      ${sj.subs.map(sb => `<h3 ${goAt(sj.id, sb.id)}>${esc(sb.name)}</h3>${(sb.comps || []).length ? `<table class="ptab"><thead><tr><th>Compétence</th><th style="width:5.5em">Période</th><th >Statut</th></tr></thead><tbody>${sb.comps.map(c => `<tr class="r-${compStatus(c).st}" ${goAt(sj.id, sb.id, c.id)}><td>${esc(c.name)}${lk(c)}</td><td>${esc(c.per || "")}</td><td>${keysOf(c).map(p => pPill(c, p)).join(" ")}</td></tr>`).join("")}</tbody></table>` : `<p class="muted">Aucune compétence.</p>`}`).join("") || '<p class="muted">Aucune sous-matière.</p>'}</section>`; }).join("");
   return { title: "Progression par matière", filter: `<label>Matière : <select data-pf="subj"><option value="all">Toutes (une page par matière)</option>${S.subjects.map(s => `<option value="${s.id}" ${s.id === pfSubj ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select></label>`, body: body || '<p class="muted">Aucune matière.</p>' };
 }
 function progPeriode() {
@@ -613,7 +613,7 @@ function progPeriode() {
   const body = shown.map(k => { const items = map[k], bySj = {}; items.forEach(x => ((bySj[x.sj.id + "|" + x.sb.id] = bySj[x.sj.id + "|" + x.sb.id] || { sj: x.sj, sb: x.sb, cs: [] }).cs.push(x.c)));
     const ev = items.filter(x => compStatus(x.c, k).st === "ev").length;
     return `<section class="psec"><h2>${k === "—" ? "Sans période" : "Période " + k.slice(1)}</h2><div class="muted" style="margin-bottom:6px">${items.length} compétence${items.length > 1 ? "s" : ""} · ${items.filter(x => compStatus(x.c, k).st !== "no").length} abordées · ${ev} évaluées</div>
-      ${Object.values(bySj).map(g => `<h3>${esc(g.sj.name)} <span style="color:#777;font-weight:500">› ${esc(g.sb.name)}</span> ${goBtn(g.sj.id, g.sb.id)}</h3><table class="ptab"><tbody>${g.cs.map(c => `<tr class="r-${compStatus(c, k).st}"><td>${esc(c.name)}${lk(c)} ${goBtn(g.sj.id, g.sb.id, c.id)}</td><td style="width:11em">${stPill(compStatus(c, k))}</td></tr>`).join("")}</tbody></table>`).join("")}</section>`; }).join("");
+      ${Object.values(bySj).map(g => `<h3 ${goAt(g.sj.id, g.sb.id)}>${esc(g.sj.name)} <span style="color:#777;font-weight:500">› ${esc(g.sb.name)}</span></h3><table class="ptab"><tbody>${g.cs.map(c => `<tr class="r-${compStatus(c, k).st}" ${goAt(g.sj.id, g.sb.id, c.id)}><td>${esc(c.name)}${lk(c)}</td><td style="width:11em">${stPill(compStatus(c, k))}</td></tr>`).join("")}</tbody></table>`).join("")}</section>`; }).join("");
   return { title: "Progression par période", filter: `<label>Période : <select data-pf="per"><option value="all">Toutes (une page par période)</option>${keys.map(k => `<option value="${k}" ${k === pfPer ? "selected" : ""}>${k === "—" ? "Sans période" : "Période " + k.slice(1)}</option>`).join("")}</select></label>`, body: body || '<p class="muted">Aucune compétence.</p>' };
 }
 function progViewCard(v) {
@@ -1519,7 +1519,7 @@ document.addEventListener("click", ev => {
     render(); return anchorSet(an, y0);
   }
   if (d.fgo) { if (ev.target.closest("a")) return; fmode = "edit"; render(); return goTo("fe-" + d.fgo); }
-  if (d.pgo) { const [a, b, c] = d.pgo.split("|"); ptab = "edit"; popen[a] = true; if (b) popen[b] = true; render(); return goTo("pe-" + (c || b || a)); }
+  if (d.pgo) { if (ev.target.closest("a")) return; const [a, b, c] = d.pgo.split("|"); ptab = "edit"; popen[a] = true; if (b) popen[b] = true; render(); return goTo("pe-" + (c || b || a)); }
   if (d.jgo) { if (ev.target.closest("a")) return; jmode = "edit"; try { localStorage.setItem("classe-jmode", jmode); } catch (e) { } render(); return goTo("jb-" + d.jgo); }
   if (d.ptog) { popen[d.ptog] = !popen[d.ptog]; return render(); }
   if (d.pall) { const o = d.pall === "open"; S.subjects.forEach(sj => { popen[sj.id] = o; sj.subs.forEach(sb => popen[sb.id] = o); }); return render(); }
