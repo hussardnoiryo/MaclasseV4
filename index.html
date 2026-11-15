@@ -679,7 +679,18 @@ function apHistory(so, it) {
   return `<div class="card"><h2>🗂️ Absences de l'année <small class="muted">(en demi-journées)</small></h2><div class="scroll"><table class="ctab"><thead><tr><th>Élève</th>${seg.map(g => `<th>${g.label}<br>${rng(g)}</th>`).join("")}<th>Total année</th></tr></thead><tbody>${rowsH}</tbody></table></div>
     <div class="row" style="margin-top:12px"><label class="sp">Détail d'un élève : <select data-apwho style="width:100%"><option value="">—</option>${so.map(s => `<option value="${s.id}" ${s.id === apWho ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select></label></div>
     ${who ? (days.length ? `<ul style="margin:8px 0 0 18px">${days.map(d => { const r = S.appel[d], m = (r.m || []).includes(who.id), a = (r.a || []).includes(who.id); return `<li>${esc(dLong(d))} — ${m && a ? "journée entière" : m ? "matin" : "après-midi"}</li>`; }).join("")}</ul>` : '<p class="muted">Aucune absence enregistrée.</p>') : ""}</div>
-    <div class="card"><h3 style="margin-top:0">Fin de trimestre</h3><p class="muted">Remet à 0 le compteur d'absences de Vie de classe pour tous les élèves. L'historique ci-dessus est conservé toute l'année.${it ? "" : " (Aucun compteur d'absences n'est lié pour le moment.)"}</p><button class="btn dan" data-act="apReset">🧹 Remettre les absences à 0</button></div>`;
+    <div class="card"><h3 style="margin-top:0">Fin de trimestre</h3><label>Compteur de Vie de classe qui reçoit les absences :<br><select data-apitem style="width:100%;margin:4px 0 8px"><option value="">— choisis le compteur —</option>${S.items.vie.map(i => `<option value="${i.id}" ${it && i.id === it.id ? "selected" : ""}>${esc(i.name)}</option>`).join("")}</select></label>${it ? "" : '<p style="color:#b02a2a;margin:0 0 8px"><b>Choisis d\'abord ton compteur d\'absences dans la liste ci-dessus</b> (ou <button class="btn sm" data-act="apCreate">crée « Absences »</button>).</p>'}<div class="row" style="margin:6px 0"><label class="sp">Début de la période en cours :<br><input type="date" data-apstart value="${S.absStart || ""}" style="padding:8px"></label></div><p class="muted" style="margin:0 0 8px">Seules les absences à partir de cette date comptent dans le compteur de Vie de classe ; les plus anciennes restent dans l'historique. Si tu as rempli l'appel après coup, touche « Recalculer » pour que le compteur reflète la période.</p><button class="btn pri" data-act="apRecalc" ${it && S.absStart ? "" : "disabled"}>🔄 Recalculer le compteur depuis cette date</button><p class="muted">Le bouton remet ce compteur à 0 pour tous les élèves (semaine en cours et cumul du trimestre). L'historique ci-dessus est conservé toute l'année.</p><button class="btn dan" data-act="apReset" ${it ? "" : "disabled"}>🧹 Remettre les absences à 0</button></div>`;
+}
+function apRecalc() {
+  const it = apItem(), st = S.absStart; if (!it || !st) return toast("Choisis le compteur et la date de début de période");
+  const dt = new Date(); dt.setHours(12); const mon = isoD(new Date(dt.getTime() - ((dt.getDay() + 6) % 7) * 864e5)), wk = mon > st ? mon : st;
+  if (!confirm(`Recalculer le compteur « ${it.name} » à partir des absences de la page Appel depuis le ${frDate(st)} ?\n\n• La semaine en cours (depuis le ${frDate(wk)}) et le cumul du trimestre seront remplacés pour ce compteur uniquement.\n• Les autres compteurs ne sont pas touchés.`)) return;
+  S.students.forEach(x => {
+    const w = apCount(x.id, wk), t = mon > st ? apCount(x.id, st, mon) : 0;
+    const C = ((S.counts[x.id] = S.counts[x.id] || {}).vie = S.counts[x.id].vie || {}), T = ((S.term[x.id] = S.term[x.id] || {}).vie = S.term[x.id].vie || {});
+    if (w) C[it.id] = w; else delete C[it.id]; if (t) T[it.id] = t; else delete T[it.id];
+  });
+  save(); render(); toast("Compteur recalculé ✓");
 }
 function apReset(silent) {
   const it = apItem(); if (!silent && !it) return toast("Aucun compteur d'absences lié");
@@ -1492,6 +1503,7 @@ const actions = {
   suiviAll(t) { S.suiviAll = !!t && t.dataset.v === "1"; save(); render(); },
   apCreate() { if (!apItem()) { const it = { id: uid(), name: "Absences", w: 0 }; S.items.vie.push(it); S.absItem = it.id; save(); render(); toast("Compteur « Absences » créé dans Vie de classe ✓"); } },
   apReset() { apReset(); },
+  apRecalc() { apRecalc(); },
   classComps() { classComps = !classComps; delete sorts.class; render(); },
   ficheTable() { ficheTable = !ficheTable; render(); },
   print() { printMode = ""; buildSheet(); window.print(); },
@@ -1708,6 +1720,7 @@ document.addEventListener("change", ev => {
   const t = ev.target, d = t.dataset;
   if (d.pn) { const [kind, a, b, c] = d.pn.split("|"), v = t.value.trim(); if (v) { if (kind === "sj") subj(a).name = v; else if (kind === "sb") subOf(subj(a), b).name = v; else subOf(subj(a), b).comps.find(x => x.id === c).name = v; save(); } return render(); }
   if (d.apdate !== undefined) { if (/^\d{4}-\d{2}-\d{2}$/.test(t.value)) { apDate = t.value; render(); } return; }
+  if (d.apstart !== undefined) { if (/^\d{4}-\d{2}-\d{2}$/.test(t.value)) { const old = S.absStart; S.absStart = t.value; S.absResets = [...new Set([...(S.absResets || []).filter(x => x !== old), t.value])].sort(); save(); render(); } return; }
   if (d.apitem !== undefined) { if (t.value) { S.absItem = t.value; save(); render(); } return; }
   if (d.apwho !== undefined) { apWho = t.value; return render(); }
   if (d.jdate !== undefined && t.type === "date") { if (/^\d{4}-\d{2}-\d{2}$/.test(t.value)) { jdate = t.value; render(); } return; }
