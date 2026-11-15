@@ -110,7 +110,8 @@ th{font-size:.78rem;color:var(--muted);vertical-align:bottom}
 #sheetIn .jtab{width:100%;border-collapse:collapse;font-size:11px}#sheetIn .jtab td{padding:6px 7px;border-bottom:1px solid #d9dde8;vertical-align:top;font-size:11px}#sheetIn .jtab tr{break-inside:avoid}#sheetIn .jc{text-align:left}#sheetIn .jt{text-align:left;width:62px;font-weight:700;white-space:nowrap;color:#2a45b0}#sheetIn .jh{font-weight:800;font-size:12px}#sheetIn .jp{color:#777;font-size:10px}#sheetIn .jx{white-space:pre-wrap;margin-top:3px}#sheetIn .jl{margin-top:4px;font-size:10px}#sheetIn .jl a{color:#2a45b0}
 #sheetIn .jsep td{background:#eef1fb;text-align:center;font-weight:700;color:#2a45b0;padding:4px;font-size:10.5px}
 .tdst{display:inline-flex;gap:8px;align-items:center;padding:6px 12px;border:1px solid #d5daea;border-radius:999px;background:#fff;margin:3px;cursor:pointer}.tdst.ok{background:#dff5e6;border-color:#9bd7ae}
-.tdst input,.tdrow input[type=checkbox]{flex:none;width:22px;height:22px;margin:0}.tdrow{padding:3px 0;border-top:1px solid #eef0f5}.tdtxt{border:0!important;background:transparent!important;box-shadow:none!important}.tdtitle{font-weight:800;font-size:1.1rem}@media(max-width:560px){.tdrow,.card>.row:has(.tdtitle){flex-wrap:wrap}.tdrow textarea.tdta{flex:1 1 calc(100% - 40px)}.tdrow .btn{margin-left:auto}.tdrow .btn+.btn{margin-left:0}.tdrow textarea.tdta+.btn{margin-left:auto}textarea.tdtitle{flex:1 1 100%;min-width:0}}textarea.tdta{resize:none;overflow:hidden;min-height:38px;line-height:1.3;font-family:inherit;word-break:break-word}.tdrow.dn .tdtxt{text-decoration:line-through;color:#8a90a5}
+.tdst input,.tdrow input[type=checkbox]{flex:none;width:22px;height:22px;margin:0}.tdrow{padding:3px 0;border-top:1px solid #eef0f5}.tdtxt{border:0!important;background:transparent!important;box-shadow:none!important}.tdtitle{font-weight:800;font-size:1.1rem}@media(max-width:560px){.tdrow,.card>.row:has(.tdtitle){flex-wrap:wrap}.tdrow textarea.tdta{flex:1 1 calc(100% - 40px)}.tdrow .btn{margin-left:auto}.tdrow .btn+.btn{margin-left:0}.tdrow textarea.tdta+.btn{margin-left:auto}textarea.tdtitle{flex:1 1 100%;min-width:0}}.aplist{padding:6px 10px}.aprow{display:flex;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid #eef0f6}.aprow.off .apn{opacity:.45;text-decoration:line-through}.apn{flex:1 1 auto;min-width:0;font-weight:700;font-size:1.02rem}.apb{flex:none;min-width:70px;padding:11px 8px;border-radius:12px;border:2px solid #d7dcec;background:#fff;font-weight:700;font-size:.9rem;cursor:pointer;color:#445}.apb.abs{background:#e03131;border-color:#e03131;color:#fff}.apc{min-width:44px;padding:11px 6px;opacity:.45;filter:grayscale(.6)}.apc.on{opacity:1;filter:none;background:#fff3bf;border-color:#f2b705}@media(max-width:480px){.aprow{flex-wrap:wrap}.apn{flex:1 0 100%}.apb{flex:1 1 0}}
+textarea.tdta{resize:none;overflow:hidden;min-height:38px;line-height:1.3;font-family:inherit;word-break:break-word}.tdrow.dn .tdtxt{text-decoration:line-through;color:#8a90a5}
 .swc{width:30px;height:30px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #c9d2e4;cursor:pointer;padding:0;font-size:.8rem;color:#8a90a5}.swc.on{box-shadow:0 0 0 3px #2a45b0}
 .jread .jtab tr.jnow td{background:#fff1a8}.jread .jtab tr.jnow td.jt{background:#ffd43b;font-weight:800}.jread .jtab tr.jnow td:first-child{box-shadow:inset 6px 0 0 #f08c00}
 .jins{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:-4px 0 12px}.jins .btn{opacity:.85}
@@ -386,7 +387,7 @@ function classNotesTable(print) {
 }
 
 /* ===================== Interface ===================== */
-const PAGES = [["prog", "🧭 Progressions"], ["journal", "📓 Cahier journal"], ["cal", "📅 Calendrier"], ["todo", "✅ À faire"], ["vie", "🙂 Vie de classe"], ["matos", "📦 Matériel"], ["sons", "🔊✍️ Sons & écriture"], ["notes", "📒 Notes"], ["fiches", "👤 Fiches"], ["an", "🔎 Analyses"], ["set", "⚙️ Paramètres"]];
+const PAGES = [["prog", "🧭 Progressions"], ["journal", "📓 Cahier journal"], ["appel", "📋 Appel"], ["cal", "📅 Calendrier"], ["todo", "✅ À faire"], ["vie", "🙂 Vie de classe"], ["matos", "📦 Matériel"], ["sons", "🔊✍️ Sons & écriture"], ["notes", "📒 Notes"], ["fiches", "👤 Fiches"], ["an", "🔎 Analyses"], ["set", "⚙️ Paramètres"]];
 let page = "home";   // l'appli s'ouvre (et se rouvre après un rafraîchissement) sur l'index
 let sel = {};            // élève sélectionné par module
 let showTable = {};      // vue classe (tableau) par module
@@ -401,7 +402,7 @@ function viewHome() {
 }
 let lastPage = "";
 function go(p) {
-  if (p === "journal") jmode = "read"; if (p === "prog") { ptab = "per"; goPerDefault(); } if (p === "todo") tdShut = {}; if (p === "fiches") fmode = "read"; if (p === "vie" || p === "matos") delete cview[p];   // affichages par défaut à l'arrivée
+  if (p === "journal") jmode = "read"; if (p === "prog") { ptab = "per"; goPerDefault(); } if (p === "todo") tdShut = {}; if (p === "appel") { apDate = today(); apFilter = "all"; apView = "day"; } if (p === "fiches") fmode = "read"; if (p === "vie" || p === "matos") delete cview[p];   // affichages par défaut à l'arrivée
   if (p === "home") lastPage = page; page = p; try { localStorage.setItem(LS_PAGE, p); } catch (e) {} render(); window.scrollTo(0, 0); if (p === "journal") jScrollNow(); }
 function jScrollNow() { const r = document.querySelector("#main tr.jnow"); if (r) window.scrollTo({ top: Math.max(0, window.scrollY + r.getBoundingClientRect().top - 90), behavior: "instant" }); }   // ouvre le cahier journal en face du créneau en cours
 function render() {
@@ -418,6 +419,7 @@ function render() {
   else if (page === "journal") m.innerHTML = viewJournal();
   else if (page === "cal") m.innerHTML = viewCal();
   else if (page === "todo") m.innerHTML = viewTodo();
+  else if (page === "appel") m.innerHTML = viewAppel();
   else m.innerHTML = viewSettings();
   m.querySelectorAll("textarea.tdta").forEach(tdGrow); fab3Paint();
 }
@@ -624,6 +626,69 @@ function progSheet() {
 /* ===================== Calendrier de classe ===================== */
 let calMonth = today().slice(0, 7), calSel = today(), calEdit = null;
 const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+/* ===================== Appel ===================== */
+let apDate = today(), apFilter = "all", apView = "day", apWho = "";
+const apRec = d => (S.appel || {})[d] || null;
+const apList = (d, k) => { const r = apRec(d); return r && Array.isArray(r[k]) ? r[k] : []; };
+function apCG(d, k) {   // cantine / garderie du jour ; sans saisie ce jour-là, on reprend le dernier jour enregistré avant
+  const r = apRec(d); if (r && Array.isArray(r[k])) return r[k];
+  let best = ""; for (const x in (S.appel || {})) if (x < d && x > best && Array.isArray(S.appel[x][k])) best = x;
+  return best ? S.appel[best][k] : [];
+}
+function apItem() { return S.items.vie.find(i => i.id === S.absItem) || S.items.vie.find(i => /absen/i.test(i.name)) || null; }   // compteur « Absences » de Vie de classe
+function apBump(sid, it, delta) {   // +1 / −1 sur le compteur existant, sans rien écraser
+  if (delta > 0) return bump(sid, "vie", it.id, 1);
+  if (cnt(sid, "vie", it.id) > 0) return bump(sid, "vie", it.id, -1);
+  const t = (S.term[sid] || {}).vie; if (t && t[it.id] > 0) t[it.id]--;
+}
+function apToggle(d, k, sid) {
+  S.appel = S.appel || {}; const r = S.appel[d] = S.appel[d] || {};
+  if (k === "c" || k === "g") { const cur = [...apCG(d, k)], i = cur.indexOf(sid); if (i >= 0) cur.splice(i, 1); else cur.push(sid); r[k] = cur; }
+  else {
+    const a = r[k] = r[k] || [], i = a.indexOf(sid), it = apItem(), live = it && d >= (S.absStart || "");
+    if (i >= 0) { a.splice(i, 1); if (live) apBump(sid, it, -1); } else { a.push(sid); if (live) apBump(sid, it, 1); }
+    if (it && !S.absItem) S.absItem = it.id;
+  }
+  if (!(r.m || []).length && !(r.a || []).length && r.c === undefined && r.g === undefined) delete S.appel[d];
+  save();
+}
+function apCount(sid, from, to) { let n = 0; Object.keys(S.appel || {}).forEach(d => { if (d >= from && (!to || d < to)) { const r = S.appel[d]; if ((r.m || []).includes(sid)) n++; if ((r.a || []).includes(sid)) n++; } }); return n; }
+function viewAppel() {
+  const so = [...S.students].sort(byName); if (!so.length) return '<div class="card muted">Ajoute d\'abord des élèves dans ⚙️ Paramètres.</div>';
+  const it = apItem(), tabs = `<div class="chips" style="margin-bottom:10px"><button class="chip ${apView === "day" ? "on" : ""}" data-apv="day">📋 Appel du jour</button><button class="chip ${apView === "hist" ? "on" : ""}" data-apv="hist">🗂️ Historique des absences</button></div>`;
+  const link = it ? `<div class="muted" style="margin-top:8px">Chaque demi-journée d'absence ajoute +1 au compteur « <b>${esc(it.name)}</b> » de Vie de classe.</div>` : `<div class="card" style="background:#fff7e0;margin-top:8px">⚠️ Aucun compteur d'absences dans 🙂 Vie de classe. Choisis-en un : <select data-apitem><option value="">—</option>${S.items.vie.map(i => `<option value="${i.id}">${esc(i.name)}</option>`).join("")}</select> ou <button class="btn sm" data-act="apCreate">Créer « Absences »</button></div>`;
+  if (apView === "hist") return tabs + apHistory(so, it);
+  const d = apDate, M = apList(d, "m"), A = apList(d, "a"), C = apCG(d, "c"), G = apCG(d, "g"), N = so.length;
+  const shown = so.filter(s => apFilter === "all" || (apFilter === "c" ? C : G).includes(s.id));
+  const abs = so.filter(s => M.includes(s.id) || A.includes(s.id)).map(s => `${esc(s.name)} <small class="muted">(${M.includes(s.id) && A.includes(s.id) ? "journée" : M.includes(s.id) ? "matin" : "après-midi"})</small>`);
+  const head = `<div class="card"><div class="row"><button class="btn" data-apn="-1">◀</button><input type="date" data-apdate value="${d}" style="font-size:1.05rem;font-weight:700;padding:8px"><button class="btn" data-apn="1">▶</button><button class="btn sm" data-apn="0">Aujourd'hui</button></div>
+    <div style="margin:8px 0;font-weight:700">${esc(dLong(d))}</div>
+    <div class="row" style="gap:14px"><span>☀️ Présents le matin : <b>${N - M.length}</b>/${N}</span><span>🌙 L'après-midi : <b>${N - A.length}</b>/${N}</span></div>
+    ${abs.length ? `<div style="margin-top:6px">Absents : ${abs.join(" · ")}</div>` : '<div class="muted" style="margin-top:6px">Tous présents pour le moment.</div>'}
+    <div class="chips" style="margin-top:10px"><button class="chip ${apFilter === "all" ? "on" : ""}" data-apf="all">Tous (${N})</button><button class="chip ${apFilter === "c" ? "on" : ""}" data-apf="c">🍽️ Cantine (${C.length})</button><button class="chip ${apFilter === "g" ? "on" : ""}" data-apf="g">🏫 Garderie / étude (${G.length})</button></div>${link}</div>`;
+  const rows = shown.map(s => { const m = M.includes(s.id), a = A.includes(s.id);
+    return `<div class="aprow ${m && a ? "off" : ""}"><span class="apn">${nm(s)}</span><button class="apb ${m ? "abs" : ""}" data-ap="m|${s.id}" title="Absent le matin">☀️ ${m ? "Absent" : "Matin"}</button><button class="apb ${a ? "abs" : ""}" data-ap="a|${s.id}" title="Absent l'après-midi">🌙 ${a ? "Absent" : "A.-midi"}</button><button class="apb apc ${C.includes(s.id) ? "on" : ""}" data-ap="c|${s.id}" title="Cantine">🍽️</button><button class="apb apc ${G.includes(s.id) ? "on" : ""}" data-ap="g|${s.id}" title="Garderie / étude">🏫</button></div>`; }).join("");
+  return tabs + head + `<div class="card aplist">${rows || '<p class="muted">Aucun élève dans cette liste.</p>'}</div><p class="muted">Touche ☀️ ou 🌙 pour marquer une absence (retouche pour annuler). Cantine et garderie sont reprises d'un jour à l'autre : modifie-les seulement quand ça change.</p>`;
+}
+function apHistory(so, it) {
+  const R = [...new Set(S.absResets || [])].sort(), seg = [];
+  for (let i = 0; i <= R.length; i++) seg.push({ from: i ? R[i - 1] : "", to: R[i] || "", label: i === R.length ? "En cours" : "Période " + (i + 1) });
+  const rng = s => s.from || s.to ? `<small class="muted">${s.from ? "dès le " + frDate(s.from).slice(0, 5) : ""}${s.to ? " jusqu'au " + frDate(s.to).slice(0, 5) : ""}</small>` : "";
+  const rowsH = so.map(s => { const c = seg.map(g => apCount(s.id, g.from, g.to)); return `<tr><td>${nm(s)}</td>${c.map(n => `<td>${n || '<span class="muted">0</span>'}</td>`).join("")}<td><b>${c.reduce((a, b) => a + b, 0)}</b></td></tr>`; }).join("");
+  const who = so.find(s => s.id === apWho), days = who ? Object.keys(S.appel || {}).sort().reverse().filter(d => (S.appel[d].m || []).includes(who.id) || (S.appel[d].a || []).includes(who.id)) : [];
+  return `<div class="card"><h2>🗂️ Absences de l'année <small class="muted">(en demi-journées)</small></h2><div class="scroll"><table class="ctab"><thead><tr><th>Élève</th>${seg.map(g => `<th>${g.label}<br>${rng(g)}</th>`).join("")}<th>Total année</th></tr></thead><tbody>${rowsH}</tbody></table></div>
+    <div class="row" style="margin-top:12px"><label class="sp">Détail d'un élève : <select data-apwho style="width:100%"><option value="">—</option>${so.map(s => `<option value="${s.id}" ${s.id === apWho ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select></label></div>
+    ${who ? (days.length ? `<ul style="margin:8px 0 0 18px">${days.map(d => { const r = S.appel[d], m = (r.m || []).includes(who.id), a = (r.a || []).includes(who.id); return `<li>${esc(dLong(d))} — ${m && a ? "journée entière" : m ? "matin" : "après-midi"}</li>`; }).join("")}</ul>` : '<p class="muted">Aucune absence enregistrée.</p>') : ""}</div>
+    <div class="card"><h3 style="margin-top:0">Fin de trimestre</h3><p class="muted">Remet à 0 le compteur d'absences de Vie de classe pour tous les élèves. L'historique ci-dessus est conservé toute l'année.${it ? "" : " (Aucun compteur d'absences n'est lié pour le moment.)"}</p><button class="btn dan" data-act="apReset">🧹 Remettre les absences à 0</button></div>`;
+}
+function apReset(silent) {
+  const it = apItem(); if (!silent && !it) return toast("Aucun compteur d'absences lié");
+  if (!silent && !confirm("Remettre à 0 le compteur d'absences (Vie de classe) pour tous les élèves ?\n\nL'historique des absences de l'année est conservé dans cette page.\nSeules les absences saisies à partir d'aujourd'hui compteront pour la période suivante.")) return;
+  if (it) S.students.forEach(s => { if ((S.counts[s.id] || {}).vie) delete S.counts[s.id].vie[it.id]; if ((S.term[s.id] || {}).vie) delete S.term[s.id].vie[it.id]; });
+  const r0 = apRec(today()), bd = r0 && ((r0.m || []).length || (r0.a || []).length) ? dAdd(today(), 1) : today();   // appel du jour déjà fait → la nouvelle période commence demain
+  S.absStart = bd; S.absResets = [...new Set([...(S.absResets || []), bd])]; save();
+  if (!silent) { render(); toast("Absences remises à 0 — historique conservé ✓"); }
+}
 /* ===================== À faire ===================== */
 let tdShut = {};   // listes dépliées pendant cette visite (repliées par défaut à chaque arrivée sur la page)
 function tdBlock(b, i, n) {
@@ -1425,6 +1490,8 @@ const actions = {
   printFiches() { if (!S.fields.length || !S.students.length) return toast("Rien à imprimer"); printMode = "fiches"; buildSheet(); window.print(); },
   suiviPick() { suiviPick = !(suiviPick === null ? !groupsOf().some(g => g.suivi) : suiviPick); render(); },
   suiviAll(t) { S.suiviAll = !!t && t.dataset.v === "1"; save(); render(); },
+  apCreate() { if (!apItem()) { const it = { id: uid(), name: "Absences", w: 0 }; S.items.vie.push(it); S.absItem = it.id; save(); render(); toast("Compteur « Absences » créé dans Vie de classe ✓"); } },
+  apReset() { apReset(); },
   classComps() { classComps = !classComps; delete sorts.class; render(); },
   ficheTable() { ficheTable = !ficheTable; render(); },
   print() { printMode = ""; buildSheet(); window.print(); },
@@ -1457,7 +1524,7 @@ const actions = {
     if (!confirm("NOUVEAU TRIMESTRE\n\n• Une sauvegarde complète (JSON) est téléchargée d'abord.\n• Évaluations, compteurs, cumul et prêts sont remis à zéro.\n• Élèves, matières et lignes de compteurs sont conservés.\n\nContinuer ?")) return;
     download("sauvegarde-fin-trimestre-" + today() + ".json", JSON.stringify(S, null, 2));
     exportCsv();
-    setTimeout(() => { S.evals = []; S.counts = {}; S.term = {}; S.lent = {}; draft = { subjectId: "", subId: "", compId: "", label: "", date: today(), max: 10, grades: {}, editId: null }; saveDraft(); save(); render(); toast("Nouveau trimestre prêt ✓"); }, 900);
+    setTimeout(() => { S.evals = []; S.counts = {}; S.term = {}; S.lent = {}; apReset(true); draft = { subjectId: "", subId: "", compId: "", label: "", date: today(), max: 10, grades: {}, editId: null }; saveDraft(); save(); render(); toast("Nouveau trimestre prêt ✓"); }, 900);
   },
   csv() { exportCsv(); },
   json() { download("classe-ce1-" + today() + ".json", JSON.stringify(S, null, 2)); },
@@ -1489,7 +1556,7 @@ const actions = {
 
 /* ---------- Événements ---------- */
 document.addEventListener("click", ev => {
-  const t = ev.target.closest("[data-go],[data-cat],[data-cv],[data-nav],[data-dec2],[data-decm2],[data-inc],[data-dec],[data-decm],[data-lend],[data-lend2],[data-inc2],[data-tbl],[data-nt],[data-edit],[data-deval],[data-an],[data-act],[data-ds],[data-di],[data-dsj],[data-dsb],[data-add],[data-addsb],[data-addcp],[data-dcp],[data-dfield],[data-bdet],[data-fab3],[data-tdim],[data-fmove],[data-fgo],[data-fan],[data-sort],[data-ptab],[data-ptog],[data-pmv],[data-pdel],[data-padd],[data-pab],[data-pev],[data-plink],[data-pall],[data-eexcl],[data-psv],[data-jadd],[data-jmv],[data-jdel],[data-jlink],[data-jldel],[data-jnav],[data-jday],[data-jsort],[data-sday],[data-jmode],[data-jcopy],[data-cmv],[data-cday],[data-cedit],[data-cdel],[data-cadd],[data-ccancel],[data-cimpdel],[data-pgo],[data-jgo],[data-fab2],[data-jcol],[data-jtcol],[data-top],[data-gofiche],[data-tdadd],[data-tdfold],[data-tddel],[data-tdmv],[data-tdnewbtn],[data-tdchk],[data-tdx],[data-tdclear],[data-tdsd],[data-tdst],[data-tdall],[data-tdmiss]");
+  const t = ev.target.closest("[data-go],[data-cat],[data-cv],[data-nav],[data-dec2],[data-decm2],[data-inc],[data-dec],[data-decm],[data-lend],[data-lend2],[data-inc2],[data-tbl],[data-nt],[data-edit],[data-deval],[data-an],[data-act],[data-ds],[data-di],[data-dsj],[data-dsb],[data-add],[data-addsb],[data-addcp],[data-dcp],[data-dfield],[data-bdet],[data-fab3],[data-ap],[data-apn],[data-apf],[data-apv],[data-tdim],[data-fmove],[data-fgo],[data-fan],[data-sort],[data-ptab],[data-ptog],[data-pmv],[data-pdel],[data-padd],[data-pab],[data-pev],[data-plink],[data-pall],[data-eexcl],[data-psv],[data-jadd],[data-jmv],[data-jdel],[data-jlink],[data-jldel],[data-jnav],[data-jday],[data-jsort],[data-sday],[data-jmode],[data-jcopy],[data-cmv],[data-cday],[data-cedit],[data-cdel],[data-cadd],[data-ccancel],[data-cimpdel],[data-pgo],[data-jgo],[data-fab2],[data-jcol],[data-jtcol],[data-top],[data-gofiche],[data-tdadd],[data-tdfold],[data-tddel],[data-tdmv],[data-tdnewbtn],[data-tdchk],[data-tdx],[data-tdclear],[data-tdsd],[data-tdst],[data-tdall],[data-tdmiss]");
   if (!t) return; const d = t.dataset;
   if (d.go) return go(d.go);
   if (d.cv) { cview[skey(page)] = d.cv; return render(); }
@@ -1537,6 +1604,10 @@ document.addEventListener("click", ev => {
     save(); return render();
   }
   if (d.gofiche) { ficheSel = d.gofiche; ficheTable = false; return go("fiches"); }
+  if (d.ap) { const [k, sid] = d.ap.split("|"); apToggle(apDate, k, sid); const y = window.scrollY; render(); return window.scrollTo(0, y); }
+  if (d.apn !== undefined) { if (d.apn === "0") apDate = today(); else { const st = +d.apn; let n = dAdd(apDate, st); for (let k = 0; k < 7 && !S.schoolDays.includes(new Date(n + "T12:00:00").getDay()); k++) n = dAdd(n, st); apDate = n; } return render(); }
+  if (d.apf) { apFilter = d.apf; return render(); }
+  if (d.apv) { apView = d.apv; return render(); }
   if (d.fab3 !== undefined) return window.scrollTo({ top: 0, behavior: "smooth" });
   if (d.top !== undefined) return page === "home" ? window.scrollTo({ top: 0, behavior: "smooth" }) : go("home");
   if (d.jtcol !== undefined) { S.jtcol = d.jtcol === "-" ? "" : d.jtcol; save(); render(); return; }
@@ -1636,6 +1707,9 @@ document.addEventListener("click", ev => {
 document.addEventListener("change", ev => {
   const t = ev.target, d = t.dataset;
   if (d.pn) { const [kind, a, b, c] = d.pn.split("|"), v = t.value.trim(); if (v) { if (kind === "sj") subj(a).name = v; else if (kind === "sb") subOf(subj(a), b).name = v; else subOf(subj(a), b).comps.find(x => x.id === c).name = v; save(); } return render(); }
+  if (d.apdate !== undefined) { if (/^\d{4}-\d{2}-\d{2}$/.test(t.value)) { apDate = t.value; render(); } return; }
+  if (d.apitem !== undefined) { if (t.value) { S.absItem = t.value; save(); render(); } return; }
+  if (d.apwho !== undefined) { apWho = t.value; return render(); }
   if (d.jdate !== undefined && t.type === "date") { if (/^\d{4}-\d{2}-\d{2}$/.test(t.value)) { jdate = t.value; render(); } return; }
   if (d.ics !== undefined && t.type === "file") { const fl = t.files && t.files[0]; if (!fl) return; const fname = fl.name; t.value = "";
     fl.text().then(txt => {
