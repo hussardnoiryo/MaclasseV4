@@ -1203,8 +1203,8 @@ function studentHtml(sid) {
 function classHtml() {
   const sorted = [...S.students].sort(byName);
   const hasComps = S.subjects.some(sj => sj.subs.some(sb => (sb.comps || []).length));
-  const comps = columns(true).filter(c => c.comp), one = comps.find(c => c.label === classOne);
-  const picker = comps.length ? `<div class="row" style="margin:0 0 8px"><label class="sp">🔎 Une seule compétence :<br><select data-cone style="width:100%"><option value="">— tableau complet —</option>${comps.map(c => `<option value="${esc(c.label)}" ${c.label === classOne ? "selected" : ""}>${esc(c.label.replace(/ › /g, " › "))}</option>`).join("")}</select></label></div>` : "";
+  const all = columns(true).filter(c => !c.auto || c.comp || c.sub || c.main), comps = all, one = comps.find(c => c.label === classOne), grp = (t, l) => l.length ? `<optgroup label="${t}">${l.map(c => `<option value="${esc(c.label)}" ${c.label === classOne ? "selected" : ""}>${esc(c.label)}</option>`).join("")}</optgroup>` : "";
+  const picker = comps.length ? `<div class="row" style="margin:0 0 8px"><label class="sp">🔎 Un seul sous-domaine ou une seule compétence :<br><select data-cone style="width:100%"><option value="">— tableau complet —</option>${grp("Sous-matières", comps.filter(c => c.sub && !c.comp))}${grp("Compétences", comps.filter(c => c.comp))}${grp("Matières entières", comps.filter(c => c.main))}</select></label></div>` : "";
   const notes = picker + (one ? classOneTable(one) : classNotesTable(false));
   const cnt3 = ["vie", "sons", "ecriture"].filter(m => S.items[m].length);
   const csorted = sortRows(sorted, "cnt", (s, k) => k === "__n" ? s.name : S.items[k].reduce((a, it) => a + tot(s.id, k, it.id), 0));
