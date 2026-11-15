@@ -568,32 +568,15 @@ function suiviClass(g) {
 }
 const dlt = d => d === null || d === undefined ? '<span class="muted">–</span>' : Math.abs(d) < 0.25 ? '<b style="color:#667">＝ stable</b>' : d > 0 ? `<b style="color:#1d7a50">▲ +${fmt(d)}</b>` : `<b style="color:#b02a2a">▼ −${fmt(-d)}</b>`;
 const periodsLabel = g => g.ps.length > 1 ? `${g.ps[0]}–${g.ps[g.ps.length - 1]}` : g.ps[0];
-function suiviBlock(sid) {   // bloc « suivi annuel » du bilan élève
-  const gs = groupsOf().filter(g => g.an); if (!gs.length) return "";
-  const E = gs.map(g => ({ g, r: suiviOf(g, sid) })).filter(x => x.r); if (!E.length) return "";
-  return `<div class="bbox bsuivi"><h5><span>📈 Suivi annuel</span></h5>${E.map(({ g, r }) => `<div class="brow"><span class="bl">${esc(g.name)} <small>(${esc(g.sb.name)})</small></span><span>${pl2(r.v1)}${r.v2 !== null ? ` → ${pl2(r.v2)}` : ' <small class="muted">1 seule évaluation</small>'}</span><span>${dlt(r.delta)}</span></div>`).join("")}</div>`;
-}
-function suiviClassCard() {
-  const gs = groupsOf().filter(g => g.an); if (!gs.length) return "";
-  return `<div class="card"><h2>📈 Suivi annuel de la classe</h2><div class="scroll"><table><thead><tr><th>Compétence</th><th>1re évaluation</th><th>Dernière</th><th>Évolution</th></tr></thead><tbody>${gs.map(g => { const c = suiviClass(g); return `<tr><td>${esc(g.sj.name)} › ${esc(g.sb.name)} › <b>${esc(g.name)}</b></td><td>${pill(c.v1)}</td><td>${pill(c.v2)}</td><td>${dlt(c.delta)}</td></tr>`; }).join("")}</tbody></table></div></div>`;
-}
-function progSuivi() {
-  const gs = groupsOf().filter(g => g.suivi), sorted = [...S.students].sort(byName);
-  const body = gs.map(g => { const E = seriesEvals(g), c = suiviClass(g);
-    return `<section class="psec"><h2 ${goAt(g.sj.id, g.sb.id, g.cs[0].id)}>${esc(g.name)} <small style="font-weight:500;color:#777">${esc(g.sj.name)} › ${esc(g.sb.name)} · ${periodsLabel(g)}</small></h2>
-      <div class="muted" style="margin-bottom:6px">${E.length} évaluation${E.length > 1 ? "s" : ""} rattachée${E.length > 1 ? "s" : ""}${g.an ? " · affichée dans l'analyse" : ""}</div>
-      ${E.length ? `<table class="ptab"><thead><tr><th>Élève</th><th>1re évaluation</th><th>Dernière évaluation</th><th>Évolution</th></tr></thead><tbody>${sorted.map(s => { const r = suiviOf(g, s.id, E); return `<tr><td>${esc(s.name)}</td>${r ? `<td>${pl2(r.v1)} <small class="muted">${frDate(r.d1)}</small></td><td>${r.v2 !== null ? `${pl2(r.v2)} <small class="muted">${frDate(r.d2)}</small>` : "–"}</td><td>${dlt(r.delta)}</td>` : '<td>–</td><td>–</td><td>–</td>'}</tr>`; }).join("")}<tr><td><b>Classe</b></td><td>${pl2(c.v1)}</td><td>${pl2(c.v2)}</td><td>${dlt(c.delta)}</td></tr></tbody></table>` : `<p class="muted">Aucune évaluation rattachée à cette compétence pour le moment (choisis-la dans 📒 Notes).</p>`}</section>`; }).join("");
-  return { title: "Suivi annuel des compétences", filter: "", body: body || '<p class="muted">Aucun suivi activé. Dans « ✏️ Modifier », une compétence présente sur plusieurs périodes (ex. P1 P2 P3) a un bouton « 📈 Suivi annuel ».</p>', nolegend: true };
-}
 function viewProg() {
   if (!pfInit) { pfInit = true; goPerDefault(); }
-  const tabs = `<div class="chips">${[["edit", "✏️ Modifier"], ["mat", "📚 Par matière"], ["per", "🗓️ Par période"], ["suivi", "📈 Suivi annuel"]].map(([k, l]) => `<button class="chip ${ptab === k ? "on" : ""}" data-ptab="${k}">${l}</button>`).join("")}</div>`;
+  const tabs = `<div class="chips">${[["edit", "✏️ Modifier"], ["mat", "📚 Par matière"], ["per", "🗓️ Par période"]].map(([k, l]) => `<button class="chip ${ptab === k ? "on" : ""}" data-ptab="${k}">${l}</button>`).join("")}</div>`;
   const cp = curPer(), note = ptab === "per" ? `<div class="muted" style="margin:2px 0 6px">📍 Période du moment : <b>${cp}</b>${pfPer !== "all" && pfPer !== cp ? " — aucune compétence prévue en " + cp + ", affichage de " + pfPer : ""}</div>` : "";
-  return tabs + note + (ptab === "edit" ? progEdit() : ptab === "mat" ? progViewCard(progMatiere()) : ptab === "suivi" ? progViewCard(progSuivi()) : progViewCard(progPeriode()));
+  return tabs + note + (ptab === "edit" ? progEdit() : ptab === "mat" ? progViewCard(progMatiere()) : progViewCard(progPeriode()));
 }
 function progEdit() {
   const note = `<div class="card muted">Les matières, sous-matières et compétences sont les mêmes que dans <b>📒 Notes</b> et ⚙️ Paramètres : ce que tu ajoutes ici s'y retrouve tout de suite (et inversement). Une compétence passe en <b style="color:#b02a2a">rouge</b> quand elle est abordée, en <b style="color:#1d7a50">vert</b> quand elle est évaluée — automatiquement si une note lui est rattachée.</div>`;
-  const GR = groupsOf(), grOf = c => GR.find(g => g.cs[0] === c);
+  
   const subjects = S.subjects.map((sj, i) => {
     const st = progStats(sj), open = !!popen[sj.id];
     return `<div class="card" id="pe-${sj.id}"><div class="row"><button class="btn sm pfold ${open ? "on" : ""}" data-ptog="${sj.id}" title="${open ? "Replier" : "Déplier"}">${open ? "−" : "+"}</button>${mvBtns("sj", sj.id, i, S.subjects.length)}
@@ -605,7 +588,7 @@ function progEdit() {
             <input type="text" class="sp pnm" value="${esc(c.name)}" data-pn="cp|${sj.id}|${sb.id}|${c.id}">
             <input type="text" class="pper" value="${esc(c.per || "")}" placeholder="P1" title="Période(s) : P1, P2, P3… (champ libre)" data-pper="${c.id}">
 <span class="pbts">${keysOf(c).map(p => { const x = perState(c, p); return `<span class="pgrp ${x.st}">${p === "—" ? "" : `<b>${p}</b>`}<button class="chip ${x.st !== "no" ? "on" : ""}" style="padding:4px 9px" data-pab="${c.id}|${p}" title="Compétence abordée">Abordé</button><button class="chip ${x.st === "ev" ? "on" : ""}" style="padding:4px 9px" data-pev="${c.id}|${p}" title="${x.auto ? "Évaluée automatiquement : une note est rattachée (période " + p + ")" : "Marquer comme évaluée"}">${x.auto ? "Évalué ⚙" : "Évalué"}</button></span>`; }).join("")}</span>
-            <button class="chip ${c.url ? "on" : ""}" style="padding:4px 9px" data-plink="${c.id}" title="${c.url ? esc(c.url) : "Ajouter un lien vers une ressource"}">🔗${c.url ? "" : " Lien"}</button>${c.url ? `<a class="plk" href="${esc(c.url)}" target="_blank" rel="noopener" title="Ouvrir le lien">↗</a>` : ""}${(g => g ? `<button class="chip ${g.suivi ? "on" : ""}" style="padding:4px 9px" data-psv="${c.id}|suivi" title="Suivre l'évolution entre la 1re et la dernière évaluation de l'année">📈 Suivi annuel</button><button class="chip ${g.an ? "on" : ""}" style="padding:4px 9px" data-psv="${c.id}|an" title="Afficher cette évolution dans l'analyse (élève et classe)">📊 Dans l'analyse</button>` : "")(grOf(c))}<button class="btn sm dan" data-pdel="cp|${sj.id}|${sb.id}|${c.id}">✕</button></div>`; }).join("") + `<div class="row" style="margin:6px 0 0 8px"><input type="text" id="add-p-cp-${sb.id}" placeholder="Nouvelle compétence" class="sp"><button class="btn sm pri" data-padd="cp|${sj.id}|${sb.id}">+ Compétence</button></div>` : ""}</div>`;
+            <button class="chip ${c.url ? "on" : ""}" style="padding:4px 9px" data-plink="${c.id}" title="${c.url ? esc(c.url) : "Ajouter un lien vers une ressource"}">🔗${c.url ? "" : " Lien"}</button>${c.url ? `<a class="plk" href="${esc(c.url)}" target="_blank" rel="noopener" title="Ouvrir le lien">↗</a>` : ""}<button class="btn sm dan" data-pdel="cp|${sj.id}|${sb.id}|${c.id}">✕</button></div>`; }).join("") + `<div class="row" style="margin:6px 0 0 8px"><input type="text" id="add-p-cp-${sb.id}" placeholder="Nouvelle compétence" class="sp"><button class="btn sm pri" data-padd="cp|${sj.id}|${sb.id}">+ Compétence</button></div>` : ""}</div>`;
       }).join("") + `<div class="row" style="margin-top:8px"><input type="text" id="add-p-sb-${sj.id}" placeholder="Nouvelle sous-matière" class="sp"><button class="btn sm" data-padd="sb|${sj.id}">+ Sous-matière</button></div>` : ""}</div>`;
   }).join("");
   const bar = `<div class="row" style="margin-bottom:8px"><button class="btn sm" data-pall="close">⇧ Tout replier</button><button class="btn sm" data-pall="open">⇩ Tout déplier</button></div>`;
@@ -633,7 +616,7 @@ function progViewCard(v) {
   return `<div class="card"><div class="row" style="margin-bottom:10px">${v.filter}<span class="sp"></span><span class="muted">${v.nolegend ? "" : legend}</span><button class="btn pri" data-act="printProg">🖨️ Imprimer</button></div>${v.body}</div>`;
 }
 function progSheet() {
-  const v = ptab === "per" ? progPeriode() : ptab === "suivi" ? progSuivi() : progMatiere();
+  const v = ptab === "per" ? progPeriode() : progMatiere();
   return `<h1>${v.title}</h1><div style="color:#777;margin-bottom:6px">${new Date().toLocaleDateString("fr-FR")}${v.nolegend ? "" : " · " + legend}</div>${v.body}`;
 }
 
@@ -976,8 +959,36 @@ function notesHisto() {
 function viewAnalyses() {
   if (!S.students.length) return emptyStudents();
   const chips = `<button class="chip ${anSel === "class" ? "on" : ""}" data-an="class">👥 Classe</button>` + [...S.students].sort(byName).map(s => `<button class="chip ${anSel === s.id ? "on" : ""}" data-an="${s.id}">${esc(s.name)}</button>`).join("");
-  const body = anSel === "class" || !stud(anSel) ? classHtml(false) + suiviClassCard() : studentHtml(anSel, false);
-  return `<div class="chips">${chips}</div><div class="row" style="margin-bottom:10px"><span class="sp"></span><button class="btn" data-act="parents">🖨️ Bilan parents (6 élèves / page)</button><button class="btn pri" data-act="print">🖨️ Imprimer / PDF (1 page A4)</button></div>${body}`;
+  const body = anSel === "class" || !stud(anSel) ? classHtml(false) : studentHtml(anSel, false);
+  return `<div class="chips">${chips}</div><div class="row" style="margin-bottom:10px"><span class="sp"></span><button class="btn" data-act="parents">🖨️ Bilan parents (6 élèves / page)</button><button class="btn pri" data-act="print">🖨️ Imprimer / PDF (1 page A4)</button></div>${body}${suiviCard()}`;
+}
+let suiviPick = null;
+function suiviCard() {   // « Suivi annuel » : en bas de l'analyse, à l'écran seulement (jamais dans les PDF)
+  const GR = groupsOf(); if (!GR.length) return "";
+  const sel = GR.filter(g => g.suivi), all = !!S.suiviAll, sid = stud(anSel) ? anSel : null, pick = suiviPick === null ? !sel.length : suiviPick;
+  const bySb = {}; GR.forEach(g => (bySb[g.sj.name + " › " + g.sb.name] = bySb[g.sj.name + " › " + g.sb.name] || []).push(g));
+  const picker = pick ? `<div style="margin:8px 0">${Object.entries(bySb).map(([k, l]) => `<div class="muted" style="margin:6px 0 3px">${esc(k)}</div><div class="chips">${l.map(g => `<button class="chip ${g.suivi ? "on" : ""}" data-psv="${g.cs[0].id}|suivi">${g.suivi ? "✓ " : ""}${esc(g.name)} <small>${periodsLabel(g)}</small></button>`).join("")}</div>`).join("")}</div>` : "";
+  const pc = v => v === null ? '<span class="muted">–</span>' : `<span class="pill ${cls(v)}" style="min-width:0">${fmt(v)}</span>`, dt = d => `<small class="muted">${esc(String(d).slice(5).split("-").reverse().join("/"))}</small>`;
+  let body = "";
+  if (!sel.length) body = '<p class="muted">Choisis ci-dessus les compétences dont tu veux suivre l\'évolution.</p>';
+  else if (sid) {   // un élève : une ligne par compétence suivie
+    const rows = sel.map(g => { const E = seriesEvals(g), r = suiviOf(g, sid, E); if (!r) return `<tr><td><b>${esc(g.name)}</b> <small class="muted">${esc(g.sb.name)}</small></td><td colspan="2" class="muted">Pas encore de note</td></tr>`;
+      const mine = E.filter(e => typeof e.grades[sid] === "number");
+      const cells = all ? mine.map(e => `<span style="white-space:nowrap">${pc(on10(e.grades[sid], e.max))} ${dt(e.date)}</span>`).join(" → ") : `${pc(r.v1)} ${dt(r.d1)}${r.v2 !== null ? ` → ${pc(r.v2)} ${dt(r.d2)}` : ' <small class="muted">1 seule évaluation</small>'}`;
+      return `<tr><td><b>${esc(g.name)}</b> <small class="muted">${esc(g.sb.name)}</small></td><td>${cells}</td><td>${dlt(r.delta)}</td></tr>`; }).join("");
+    body = `<div class="scroll"><table><thead><tr><th>Compétence</th><th>${all ? "Toutes les notes" : "1re → dernière"}</th><th>Évolution</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  } else {   // la classe : un tableau par compétence suivie
+    const sorted = [...S.students].sort(byName);
+    body = sel.map(g => { const E = seriesEvals(g), c = suiviClass(g);
+      if (!E.length) return `<h3>${esc(g.name)} <small class="muted">${esc(g.sj.name)} › ${esc(g.sb.name)}</small></h3><p class="muted">Aucune évaluation rattachée pour le moment (choisis la compétence dans 📒 Notes).</p>`;
+      const head = all ? E.map(e => `<th>${esc(e.label || "éval.")}<br>${dt(e.date)}</th>`).join("") : "<th>1re évaluation</th><th>Dernière</th>";
+      const row = st => { const r = suiviOf(g, st.id, E); if (!r) return `<td colspan="${all ? E.length + 1 : 3}" class="muted">–</td>`;
+        return (all ? E.map(e => `<td>${pc(on10(e.grades[st.id], e.max))}</td>`).join("") : `<td>${pc(r.v1)} ${dt(r.d1)}</td><td>${r.v2 !== null ? `${pc(r.v2)} ${dt(r.d2)}` : "–"}</td>`) + `<td>${dlt(r.delta)}</td>`; };
+      const last = `<tr class="clrow"><td><b>Classe</b></td>${all ? E.map(e => `<td>${pc(mean(counted().map(st => on10(e.grades[st.id], e.max))))}</td>`).join("") : `<td>${pc(c.v1)}</td><td>${pc(c.v2)}</td>`}<td>${dlt(c.delta)}</td></tr>`;
+      return `<h3>${esc(g.name)} <small class="muted">${esc(g.sj.name)} › ${esc(g.sb.name)} · ${periodsLabel(g)}</small></h3><div class="scroll"><table class="ctab"><thead><tr><th>Élève</th>${head}<th>Évolution</th></tr></thead><tbody>${sorted.map(st => `<tr><td>${nm(st)}</td>${row(st)}</tr>`).join("")}${last}</tbody></table></div>`; }).join("");
+  }
+  return `<div class="card" id="suivi-an"><div class="row"><h2 class="sp" style="margin:0">📈 Suivi annuel${sid ? " · " + esc(stud(sid).name) : " de la classe"}</h2><button class="chip ${pick ? "on" : ""}" data-act="suiviPick">⚙️ Compétences suivies (${sel.length})</button></div>${picker}
+    <div class="chips" style="margin:8px 0"><button class="chip ${!all ? "on" : ""}" data-act="suiviAll" data-v="0">1re et dernière note</button><button class="chip ${all ? "on" : ""}" data-act="suiviAll" data-v="1">Toutes les notes</button></div>${body}<p class="muted" style="margin-top:8px">Ce bloc n'apparaît pas sur les PDF. Seules les compétences présentes sur plusieurs périodes (ex. P1 P2 P3) peuvent être suivies.</p></div>`;
 }
 function modTotals(sid) {   // total par module et par ligne
   const r = {};
@@ -1094,7 +1105,6 @@ function bilanEleve(sid) {
   return `<div class="bil"><div class="bhead"><h1>${esc(s.name)}</h1><span>Bilan de l'élève · ${date}</span></div>${s.excl ? `<div class="bmuted" style="margin:-6px 0 10px">ℹ️ Cet élève n'est pas compté dans les moyennes de la classe.</div>` : ""}${hero}
     <div class="bgrid2">${pf}${cards.join("")}</div>
     ${counters ? `<div class="bgrid4">${counters}</div>` : ""}
-    ${suiviBlock(sid) ? `<div class="bgrid4">${suiviBlock(sid)}</div>` : ""}
     ${fichBlock(sid)}
     <div class="bfoot">Notes ramenées sur 10 · vert : acquis (7,5 et plus) · orange : en cours d'acquisition (5 à 7,5) · rouge : à renforcer (moins de 5) · repère noir : moyenne de la classe.<br>🤖 = note automatique calculée à partir des compteurs (relative à la classe).</div></div>`;
 }
@@ -1412,6 +1422,8 @@ const actions = {
     const eff = jTitle(lim), had = lim in S.jtitles; ds.forEach(d => { delete S.journal[d]; delete S.jtitles[d]; }); if (!had && eff) S.jtitles[lim] = eff; save(); render(); toast(ds.length + " journée(s) supprimée(s) ✓");
   },
   printFiches() { if (!S.fields.length || !S.students.length) return toast("Rien à imprimer"); printMode = "fiches"; buildSheet(); window.print(); },
+  suiviPick() { suiviPick = !(suiviPick === null ? !groupsOf().some(g => g.suivi) : suiviPick); render(); },
+  suiviAll(t) { S.suiviAll = !!t && t.dataset.v === "1"; save(); render(); },
   classComps() { classComps = !classComps; delete sorts.class; render(); },
   ficheTable() { ficheTable = !ficheTable; render(); },
   print() { printMode = ""; buildSheet(); window.print(); },
@@ -1493,7 +1505,7 @@ document.addEventListener("click", ev => {
   if (d.an) { anSel = d.an; return render(); }
   if (d.edit) { const e = S.evals.find(x => x.id === d.edit); if (e) { draft = { subjectId: e.subjectId, subId: e.subId, compId: e.compId || "", per: e.per || "", label: e.label, date: e.date, max: e.max, coef: e.coef ?? 1, excl: !!e.excl, grades: { ...e.grades }, editId: e.id }; saveDraft(); ntab = "saisie"; render(); } return; }
   if (d.deval) { if (confirm("Supprimer cette évaluation ?")) { S.evals = S.evals.filter(x => x.id !== d.deval); save(); render(); } return; }
-  if (d.act) return actions[d.act]();
+  if (d.act) return actions[d.act](t);
   if (d.ds) { const s = stud(d.ds); if (!confirm(`Supprimer ${s.name} ? Ses notes et compteurs seront supprimés.`)) return;
     S.students = S.students.filter(x => x.id !== d.ds); delete S.counts[d.ds]; delete S.term[d.ds]; Object.keys(S.lent).forEach(k => { if (k.startsWith(d.ds + "::")) delete S.lent[k]; });
     S.evals.forEach(e => delete e.grades[d.ds]); save(); return render(); }
@@ -1538,10 +1550,7 @@ document.addEventListener("click", ev => {
   if (d.jgo) { if (ev.target.closest("a")) return; jmode = "edit"; try { localStorage.setItem("classe-jmode", jmode); } catch (e) { } render(); return goTo("jb-" + d.jgo); }
   if (d.ptog) { popen[d.ptog] = !popen[d.ptog]; return render(); }
   if (d.pall) { const o = d.pall === "open"; S.subjects.forEach(sj => { popen[sj.id] = o; sj.subs.forEach(sb => popen[sb.id] = o); }); return render(); }
-  if (d.psv) { const [cid, kind] = d.psv.split("|"), g = groupsOf().find(x => x.cs.some(c => c.id === cid)); if (!g) return;
-    if (kind === "suivi") { const v = !g.suivi; g.cs.forEach(c => { c.suivi = v; if (!v) c.suiviAn = false; }); }
-    else { const v = !g.an; g.cs.forEach(c => { c.suiviAn = v; if (v) c.suivi = true; }); }
-    save(); return render(); }
+  if (d.psv) { const cid = d.psv.split("|")[0], g = groupsOf().find(x => x.cs.some(c => c.id === cid)); if (!g) return; const v = !g.suivi; g.cs.forEach(c => { c.suivi = v; c.suiviAn = false; }); save(); return render(); }
   if (d.jnav !== undefined) { if (d.jnav === "0") jdate = today(); else { const st = +d.jnav; let n = dAdd(jdate, st); for (let k = 0; k < 7 && !S.schoolDays.includes(new Date(n + "T12:00:00").getDay()); k++) n = dAdd(n, st); jdate = n; } render(); return jdate === today() && jmode === "read" ? jScrollNow() : window.scrollTo(0, 0); }   // ◀ ▶ sautent les jours sans classe
   if (d.sday) { const w = +d.sday, a = S.schoolDays.includes(w) ? S.schoolDays.filter(x => x !== w) : [...S.schoolDays, w]; if (!a.length) return toast("Garde au moins un jour de classe"); S.schoolDays = a.sort((x, y) => (x || 7) - (y || 7)); save(); return render(); }
   if (d.cmv !== undefined) { if (d.cmv === "0") { calMonth = today().slice(0, 7); calSel = today(); } else { const [Y, M] = calMonth.split("-").map(Number), t = new Date(Y, M - 1 + +d.cmv, 1); calMonth = isoD(t).slice(0, 7); } return render(); }
