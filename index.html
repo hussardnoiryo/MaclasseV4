@@ -14,10 +14,10 @@ body{background:var(--bg);color:var(--text);min-height:100dvh;padding-bottom:cal
 button,input,select,textarea{font:inherit;font-size:16px;color:inherit;touch-action:manipulation}
 html{-webkit-text-size-adjust:100%}
 body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
-#fab2{position:fixed;right:14px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 62px);z-index:20;border:0;border-radius:999px;padding:14px 20px;background:#f08c00;color:#fff;font-weight:800;box-shadow:0 6px 18px rgba(120,70,0,.35);cursor:pointer}
-#fab3{position:fixed;right:14px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 62px);z-index:20;border:2px solid #fff;border-radius:999px;padding:12px 18px;background:#0ca678;color:#fff;font-weight:800;box-shadow:0 6px 18px rgba(0,60,40,.35);cursor:pointer;display:none}
+#fab2{position:fixed;right:14px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + var(--kb,0px) + 62px);z-index:20;border:0;border-radius:999px;padding:14px 20px;background:#f08c00;color:#fff;font-weight:800;box-shadow:0 6px 18px rgba(120,70,0,.35);cursor:pointer}
+#fab3{position:fixed;right:14px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + var(--kb,0px) + 62px);z-index:20;border:2px solid #fff;border-radius:999px;padding:12px 18px;background:#0ca678;color:#fff;font-weight:800;box-shadow:0 6px 18px rgba(0,60,40,.35);cursor:pointer;display:none}
 @media print{#fab2,#fab3{display:none!important}}
-#fab{position:fixed;right:14px;bottom:max(14px,env(safe-area-inset-bottom));z-index:20;border-radius:999px;padding:14px 20px;background:#2b2d42;color:#fff;border:2px solid #fff;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.4);cursor:pointer}
+#fab{position:fixed;right:14px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + var(--kb,0px));z-index:20;border-radius:999px;padding:14px 20px;background:#2b2d42;color:#fff;border:2px solid #fff;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.4);cursor:pointer}
 @media print{#fab{display:none}}
 .idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}.idx button{display:flex;flex-direction:column;align-items:center;gap:6px;border:2px solid transparent;border-radius:18px;background:#fff;padding:18px 8px;cursor:pointer;font-weight:700;color:var(--ink,#2b2f4a);box-shadow:0 2px 8px rgba(60,70,100,.1)}.idx button b{font-size:2.3rem;line-height:1}.idx button.on{background:var(--blue-l);border-color:var(--blue);color:#2a45b0}
 #nav{position:sticky;top:0;z-index:10;display:flex;gap:6px;justify-content:space-between;align-items:center;background:linear-gradient(115deg,#3b5bdb 0%,#7048e8 58%,#d6336c 120%);color:#fff;padding:9px 14px;padding-top:max(9px,env(safe-area-inset-top));border-radius:0 0 18px 18px;box-shadow:0 6px 18px rgba(80,60,200,.32);overflow-x:auto;cursor:pointer;-webkit-tap-highlight-color:transparent}#nav #sync{color:rgba(255,255,255,.88)}#nav #sync.err{color:#ffe066}
@@ -346,7 +346,17 @@ function columns(withComps) {   // colonnes du bilan : sous-matières (et compé
   });
   return cols;
 }
-let classComps = false;
+let classComps = false, classOne = "";
+/* Détail d'une seule compétence : une ligne par élève, sa moyenne et chaque évaluation de cette compétence */
+function classOneTable(col) {
+  const ev = allEvals().filter(col.f).sort((a, b) => (a.date || "").localeCompare(b.date || "")), cl = counted();
+  const rows = sortRows([...S.students].sort(byName), "cone", (st, k) => k === "__n" ? st.name : k === "__a" ? avgOf(st.id, col.f) : on10((ev.find(e => e.id === k) || { grades: {} }).grades[st.id], (ev.find(e => e.id === k) || {}).max));
+  const pl = v => v === null ? '<span class="muted">–</span>' : `<span class="pill ${cls(v)}" style="min-width:0">${fmt(v)}</span>`;
+  const head = `<tr>${sth("cone", "__n", "t", "Élève")}${sth("cone", "__a", "n", "Moyenne", 'class="cmain"')}${ev.map(e => sth("cone", e.id, "n", `${esc(e.label || "éval.")}<br><small class="muted">${esc((e.date || "").slice(5).split("-").reverse().join("/"))}${e.excl ? " ⛔" : ""}</small>`)).join("")}</tr>`;
+  const body = rows.map(st => `<tr><td>${nm(st)}</td><td class="cmain">${pl(avgOf(st.id, col.f))}</td>${ev.map(e => `<td>${pl(on10(e.grades[st.id], e.max))}</td>`).join("")}</tr>`).join("");
+  const last = `<tr class="clrow"><td><b>Classe</b></td><td class="cmain">${pl(classAvg(col.f))}</td>${ev.map(e => `<td>${pl(mean(cl.map(st => on10(e.grades[st.id], e.max))))}</td>`).join("")}</tr>`;
+  return `<div class="scroll"><table class="ctab"><thead>${head}</thead><tbody>${body}${last}</tbody></table></div><p class="muted" style="margin-top:6px">Clique sur « Moyenne » (ou une évaluation) pour classer les élèves : ▲ = les plus en difficulté en premier.</p>`;
+}
 /* Tris : clic sur un en-tête = ordre croissant/décroissant, 3e clic = ordre alphabétique d'origine */
 let sorts = {};
 const isEmpty = v => v === null || v === undefined || v === "";
@@ -411,8 +421,11 @@ function render() {
   else m.innerHTML = viewSettings();
   m.querySelectorAll("textarea.tdta").forEach(tdGrow); fab3Paint();
 }
-function fab3Paint() { const b = $("#fab3"); if (b) b.style.display = (page === "sons" || page === "ecriture") && window.scrollY > 250 ? "block" : "none"; }
+function fab3Paint() { const b = $("#fab3"); if (b) b.style.display = window.scrollY > 250 ? "block" : "none"; const f2 = $("#fab2"); b.style.bottom = f2 && f2.style.display !== "none" ? "calc(max(14px,env(safe-area-inset-bottom)) + var(--kb,0px) + 112px)" : ""; }   // sur toutes les pages ; au-dessus du bouton Lire/Éditer quand il est là
 window.addEventListener("scroll", fab3Paint, { passive: true });
+// boutons flottants toujours au-dessus du clavier du smartphone
+(function () { const vv = window.visualViewport; if (!vv) return; const kb = () => { const h = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)); document.documentElement.style.setProperty("--kb", (h > 80 ? h : 0) + "px"); };
+  vv.addEventListener("resize", kb); vv.addEventListener("scroll", kb); kb(); })();
 function tdGrow(e) { e.style.height = "auto"; e.style.height = e.scrollHeight + 2 + "px"; }
 document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches && e.target.matches("textarea.tdta")) { e.preventDefault(); e.target.blur(); } });
 
@@ -1114,12 +1127,14 @@ function studentHtml(sid) {
 function classHtml() {
   const sorted = [...S.students].sort(byName);
   const hasComps = S.subjects.some(sj => sj.subs.some(sb => (sb.comps || []).length));
-  const notes = classNotesTable(false);
+  const comps = columns(true).filter(c => c.comp), one = comps.find(c => c.label === classOne);
+  const picker = comps.length ? `<div class="row" style="margin:0 0 8px"><label class="sp">🔎 Une seule compétence :<br><select data-cone style="width:100%"><option value="">— tableau complet —</option>${comps.map(c => `<option value="${esc(c.label)}" ${c.label === classOne ? "selected" : ""}>${esc(c.label.replace(/ › /g, " › "))}</option>`).join("")}</select></label></div>` : "";
+  const notes = picker + (one ? classOneTable(one) : classNotesTable(false));
   const cnt3 = ["vie", "sons", "ecriture"].filter(m => S.items[m].length);
   const csorted = sortRows(sorted, "cnt", (s, k) => k === "__n" ? s.name : S.items[k].reduce((a, it) => a + tot(s.id, k, it.id), 0));
   const cc = cnt3.length ? `<div class="scroll"><table><thead><tr>${sth("cnt", "__n", "t", "Élève")}${cnt3.map(m => sth("cnt", m, "n", MODS[m])).join("")}</tr></thead><tbody>${csorted.map(s => `<tr><td>${nm(s)}</td>${cnt3.map(m => `<td>${S.items[m].reduce((a, it) => a + tot(s.id, m, it.id), 0)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<p class="muted">Aucun compteur.</p>`;
   const lent = Object.keys(S.lent).filter(k => S.lent[k]).map(k => { const [sid, iid] = k.split("::"); const st = stud(sid), it = S.items.matos.find(i => i.id === iid); return st && it ? `${esc(st.name)} : ${esc(it.name)}` : null; }).filter(Boolean);
-  return `<div class="card"><div class="row"><h2 class="sp" style="margin:0">Notes de la classe</h2>${hasComps ? `<button class="chip ${classComps ? "on" : ""}" data-act="classComps">↳ Détail par compétence</button>` : ""}</div><p class="muted" style="margin:4px 0 8px">Moyennes sur 10 par matière, sous-matière (Français, Mathématiques, EMC) et élève. Les élèves « hors moyenne » ne comptent pas dans la ligne Classe.</p>${notes}${autoNote()}</div><div class="card"><h2>Compteurs (cumul du trimestre)</h2>${cc}</div>${lent.length ? `<div class="card"><h3>📦 Matériel actuellement prêté</h3><p>${lent.join(" · ")}</p></div>` : ""}`;
+  return `<div class="card"><div class="row"><h2 class="sp" style="margin:0">Notes de la classe</h2>${hasComps && !classOne ? `<button class="chip ${classComps ? "on" : ""}" data-act="classComps">↳ Détail par compétence</button>` : ""}</div><p class="muted" style="margin:4px 0 8px">Moyennes sur 10 par matière, sous-matière (Français, Mathématiques, EMC) et élève. Les élèves « hors moyenne » ne comptent pas dans la ligne Classe.</p>${notes}${autoNote()}</div><div class="card"><h2>Compteurs (cumul du trimestre)</h2>${cc}</div>${lent.length ? `<div class="card"><h3>📦 Matériel actuellement prêté</h3><p>${lent.join(" · ")}</p></div>` : ""}`;
 }
 
 /* Impression : une seule page A4 */
@@ -1643,6 +1658,7 @@ document.addEventListener("change", ev => {
   if (d.selit) { citem[d.selit] = t.value; return render(); }
   if (d.d) { draft[d.d] = d.d === "max" ? (+t.value || 10) : d.d === "excl" ? t.checked : t.value; if (d.d === "date") draft.dateManual = true; if (d.d === "subjectId") { draft.subId = ""; draft.compId = ""; } if (d.d === "subId") draft.compId = ""; saveDraft(); if (["subjectId", "subId", "max"].includes(d.d)) render(); return; }
   if (d.g) { const v = t.value.replace(",", "."); if (v === "") delete draft.grades[d.g]; else draft.grades[d.g] = parseFloat(v); saveDraft(); const p = $("#gp-" + d.g); if (p) p.innerHTML = pill(on10(draft.grades[d.g], draft.max)); updDraftMean(); return; }
+  if (d.cone !== undefined) { classOne = t.value; if (classOne) sorts.cone = { k: "__a", d: "asc" }; else delete sorts.cone; return render(); }
   if (d.hf !== undefined) { histF = t.value; return render(); }
   if (d.rn) { const s = stud(d.rn), v = t.value.trim(); if (v) { s.name = v; save(); } return render(); }
   if (d.ri) { const [m, id] = d.ri.split("|"), it = S.items[m].find(i => i.id === id), v = t.value.trim(); if (v) { it.name = v; if (m === "vie" && !it.emc) it.emc = inferEmc(v); save(); } return render(); }
