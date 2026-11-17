@@ -855,7 +855,14 @@ function exportICSText() {
 let jdate = today();
 const dAdd = (d, n) => { const t = new Date(d + "T12:00:00"); t.setDate(t.getDate() + n); return isoD(t); };
 const dLong = d => { const t = new Date(d + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }); return t.charAt(0).toUpperCase() + t.slice(1); };
-const tAdd = (t, m) => { const x = String(t || "").match(/^(\d{1,2}):(\d{2})$/); if (!x) return ""; const v = Math.min(23 * 60 + 59, +x[1] * 60 + +x[2] + m); return String(Math.floor(v / 60)).padStart(2, "0") + ":" + String(v % 60).padStart(2, "0"); };
+const tAdd = (t, m) => { const x = String(t || "").match(/^(\d{1,2}):(\d{2})$/); if (!x) return ""; const v = Math.max(0, Math.min(23 * 60 + 59, +x[1] * 60 + +x[2] + m)); return String(Math.floor(v / 60)).padStart(2, "0") + ":" + String(v % 60).padStart(2, "0"); };
+const tMin = t => { const x = String(t || "").match(/^(\d{1,2}):(\d{2})$/); return x ? +x[1] * 60 + +x[2] : NaN; };
+const jDur = b => { const m = tMin(b.to) - tMin(b.from); return Number.isFinite(m) && m >= 0 ? m : ""; };
+function jSortDay(arr) {   // tri automatique par heure de début : un bloc sans horaire reste collé au bloc qui le précède
+  const lead = [], groups = []; arr.forEach(b => { if (b.from) groups.push([b]); else if (groups.length) groups[groups.length - 1].push(b); else lead.push(b); });
+  groups.sort((a, b) => a[0].from < b[0].from ? -1 : a[0].from > b[0].from ? 1 : 0);   // tri stable
+  const out = [...lead, ...groups.flat()]; arr.splice(0, arr.length, ...out);
+}
 const tFr = t => t ? t.replace(/^0/, "").replace(":", "h") : "";
 const jget = d => (S.journal || {})[d] || [];
 const jviews = d => jget(d);
@@ -873,7 +880,7 @@ function jNowId(d) {   // bloc en cours à l'heure actuelle (aujourd'hui seuleme
 const jtime = b => b.from || b.to ? `${tFr(b.from)}${b.to ? " – " + tFr(b.to) : ""}` : "";
 function jblock(b, i, n) {
   const mv = `<button class="btn sm" data-jmv="${b.id}|-1" ${i === 0 ? "disabled" : ""} title="Monter">▲</button><button class="btn sm" data-jmv="${b.id}|1" ${i === n - 1 ? "disabled" : ""} title="Descendre">▼</button><button class="btn sm dan" data-jdel="${b.id}" title="Supprimer">✕</button>`;
-  const times = `<div class="jtime"><label>de<input type="time" data-jt="${b.id}|from" value="${esc(b.from || "")}"></label><label>à<input type="time" data-jt="${b.id}|to" value="${esc(b.to || "")}"></label></div>`;
+  const times = `<div class="jtime"><label>de<input type="time" data-jt="${b.id}|from" value="${esc(b.from || "")}"></label><label>durée (min)<input type="number" inputmode="numeric" min="0" step="5" data-jt="${b.id}|dur" value="${jDur(b)}" placeholder="min"></label><label>à<input type="time" data-jt="${b.id}|to" value="${esc(b.to || "")}"></label></div>`;
   if (b.type === "sep") return `<div class="jsepb" id="jb-${b.id}">${times}<input type="text" class="sp" data-jf="${b.id}|label" value="${esc(b.label || "")}" placeholder="Récréation, pause déjeuner…" style="font-weight:700"><span class="row" style="gap:4px">${mv}</span></div>`;
   const sj = subj(b.subjectId), sb = subOf(sj, b.subId);
   const opt = (arr, cur) => `<option value="">—</option>` + arr.map(x => `<option value="${x.id}" ${x.id === cur ? "selected" : ""}>${esc(x.name)}</option>`).join("");
@@ -1662,8 +1669,8 @@ document.addEventListener("click", ev => {
     const [kind, label, after] = d.jadd.split("|"), arr = ((S.journal = S.journal || {})[jdate] = S.journal[jdate] || []);
     let pos = arr.length; if (after) { const k = arr.findIndex(x => x.id === after); if (k >= 0) pos = k + 1; }
     const prevB = pos ? arr[pos - 1] : null, last = prevB ? (jview(prevB).to || prevB.to || "") : "";
-    const from = last || (arr.length ? "" : "08:30"), dur = kind === "sep" ? (/d[ée]jeuner|midi/i.test(label) ? 90 : 15) : 45;
-    const b = { id: uid(), type: kind === "sep" ? "sep" : "bloc", from, to: tAdd(from, dur) };
+    const from = last || (arr.length ? "" : "08:30"), dur = kind === "sep" ? (/d[ée]jeuner|midi/i.test(label) ? 90 : 15) : 45, nextB = pos < arr.length ? arr[pos] : null, nx = nextB && nextB.from && from && nextB.from > from ? nextB.from : "";   // fin = début du bloc suivant s'il y en a un
+    const b = { id: uid(), type: kind === "sep" ? "sep" : "bloc", from, to: nx || tAdd(from, dur) };
     if (kind === "sep") b.label = label || ""; else { b.title = ""; b.text = ""; b.links = []; }
     arr.splice(pos, 0, b); save(); render(); setTimeout(() => { const e = document.querySelector(`[data-jf="${b.id}|${kind === "sep" ? "label" : "title"}"]`); e && e.scrollIntoView({ block: "center" }); e && e.focus(); }, 30); return; }
   if (d.jmv) { const [id, k] = d.jmv.split("|"), r = jfind(id); if (!r) return; const j = r.i + +k; if (j < 0 || j >= r.arr.length) return; [r.arr[r.i], r.arr[j]] = [r.arr[j], r.arr[r.i]]; save(); return render(); }
@@ -1740,7 +1747,12 @@ document.addEventListener("change", ev => {
     }).catch(() => toast("Lecture du fichier impossible")); return; }
   if (d.jsrc !== undefined && t.tagName === "SELECT") { jsrc = t.value; return; }
   if (d.jwt !== undefined && t.type === "checkbox") { jwt = t.checked; return; }
-  if (d.jt) { const [id, k] = d.jt.split("|"), r = jfind(id); if (r) { r.b[k] = t.value; save(); } return; }
+  if (d.jt) {
+    const [id, k] = d.jt.split("|"), r = jfind(id); if (!r) return; const b = r.b, v = t.value;
+    if (k === "from") { const dur = b.from && b.to ? tMin(b.to) - tMin(b.from) : NaN; b.from = v; if (v && Number.isFinite(dur) && dur >= 0) b.to = tAdd(v, dur); }   // l'heure de fin suit la durée
+    else if (k === "dur") { const m = parseInt(v, 10); if (Number.isFinite(m) && m >= 0) { if (b.from) b.to = tAdd(b.from, m); else if (b.to) b.from = tAdd(b.to, -m); else return toast("Renseigne d'abord l'heure de début"); } }
+    else b.to = v;
+    jSortDay(r.arr); save(); render(); const e = document.getElementById("jb-" + id); if (e) { const y = e.getBoundingClientRect(); if (y.top < 60 || y.bottom > innerHeight) e.scrollIntoView({ block: "center" }); } return; }
   if (d.jsel) { const [id, k] = d.jsel.split("|"), r = jfind(id); if (!r) return; r.b[k] = t.value; if (k === "subjectId") { r.b.subId = ""; r.b.compId = ""; } if (k === "subId") r.b.compId = ""; save(); return render(); }
   if (d.ab) { const [k, w] = d.ab.split("|"), v = parseFloat(String(t.value).replace(",", ".")); S.abounds = S.abounds || {}; const o = S.abounds[k] = S.abounds[k] || {}; const prev = o[w]; if (Number.isFinite(v)) o[w] = Math.max(0, Math.min(10, v)); if ((o.min ?? 3) > (o.max ?? 10)) { toast("Le minimum doit rester ≤ au maximum"); if (prev === undefined) delete o[w]; else o[w] = prev; } save(); return render(); }
   if (d.pper) { const c = findComp(d.pper); if (c && !perBusy && c.per !== t.value.trim()) { perBusy = true; c.per = t.value.trim(); const n = splitComp(c); sortByPeriod(c); save(); try { render(); } finally { perBusy = false; } if (n > 1) toast(`Compétence dupliquée sur ${n} périodes ✓`); } return; }
