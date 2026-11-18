@@ -1252,8 +1252,8 @@ function mdlHtml(sid) {
       title = `${sj.name} › ${sb.name}`;
       const comps = (sb.comps || []).filter(c => all.some(e => e.compId === c.id)), rest = all.filter(e => !(sb.comps || []).some(c => c.id === e.compId));
       body = `<details class="dt" open>${mdlSum(sid, "Moyenne de la sous-matière", f, "ds")}</details>`
-        + comps.map(c => `<details class="dt" open>${mdlSum(sid, c.name, e => f(e) && e.compId === c.id)}${all.filter(e => e.compId === c.id).sort(byDate).map(e => evRowOf(sid, e)).join("")}</details>`).join("")
-        + (rest.length ? `<details class="dt" open>${mdlSum(sid, "Sans compétence", e => f(e) && !(sb.comps || []).some(c => c.id === e.compId))}${rest.sort(byDate).map(e => evRowOf(sid, e)).join("")}</details>` : "");
+        + comps.map(c => `<details class="dt">${mdlSum(sid, c.name, e => f(e) && e.compId === c.id)}${all.filter(e => e.compId === c.id).sort(byDate).map(e => evRowOf(sid, e)).join("")}</details>`).join("")
+        + (rest.length ? `<details class="dt">${mdlSum(sid, "Sans compétence", e => f(e) && !(sb.comps || []).some(c => c.id === e.compId))}${rest.sort(byDate).map(e => evRowOf(sid, e)).join("")}</details>` : "");
     } else {
       const all = E.filter(e => e.subjectId === sj.id), direct = all.filter(e => !sj.subs.some(x => x.id === e.subId));
       title = sj.name;
