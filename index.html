@@ -1229,6 +1229,7 @@ function counterDetails(sid) {
     return `<div class="card"><div class="row"><h3 class="sp" style="margin:0">${name[m]} — détail de ${esc(stud(sid).name)}</h3><button class="btn sm" data-bdet="${m}">✕ Fermer</button></div>
       <p class="muted" style="margin:6px 0">${hit.length ? `${total} ${unit[m]} sur ${hit.length} ligne${hit.length > 1 ? "s" : ""}, classées par couleur selon l'écart avec la moyenne de la classe : 🔴 rouges d'abord (bien au-dessus), puis 🟠 oranges, puis 🟢 vertes ; à couleur égale, du plus fréquent au moins fréquent (cumul du trimestre). « classe » = moyenne des élèves comptés.` : "Rien à signaler pour cet élève."}</p>
       ${hit.map(x => `<div class="dev" style="padding-left:4px"><span class="dn"><b>${esc(x.name)}</b></span><span class="bp ${colr(x)}">×${x.v}</span><span class="bc">classe ${x.c === null ? "–" : fmt(x.c)}</span></div>`).join("")}
+      ${m === "ecriture" ? `<div class="dev" style="padding-left:4px"><span class="dn"><b>🪞 Écrits en miroir</b></span><span class="bc" style="font-size:1.05em">${mirOf(sid) ? esc(mirOf(sid)) : "rien de noté"}</span></div>` : ""}
       ${none > 0 && hit.length ? `<p class="muted" style="margin-top:6px">${none} autre${none > 1 ? "s" : ""} ligne${none > 1 ? "s" : ""} sans rien à signaler.</p>` : ""}</div>`;
   }).join("");
 }
