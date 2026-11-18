@@ -554,7 +554,7 @@ function splitComp(c) {   // « P1 P2 P3 » → une compétence par période («
 const keysOf = c => { const p = periodsOf(c); return p.length ? p : ["—"]; };
 let jabCache = null;
 function jabOf(c, p) {   // « abordée » automatique : un bloc du cahier journal (déjà passé ou du jour) est rattaché à la compétence
-  if (!jabCache) { jabCache = {}; const t = today(); Object.keys(S.journal || {}).forEach(d => { if (d <= t) (S.journal[d] || []).forEach(b => { if (b.compId) (jabCache[b.compId] = jabCache[b.compId] || []).push(d); }); }); }
+  if (!jabCache) { jabCache = {}; const t = today(); Object.keys(S.journal || {}).forEach(d => { if (d <= t) (S.journal[d] || []).forEach(b => { [b, ...(b.more || [])].forEach(x => { if (x.compId) (jabCache[x.compId] = jabCache[x.compId] || []).push(d); }); }); }); }
   const ds = jabCache[c.id]; if (!ds) return false;
   const ps = keysOf(c); if (ps.length < 2) return true;
   return ds.some(d => { const pd = curPer(d); const tgt = ps.includes(pd) ? pd : ps.filter(k => k < pd).pop() || ps[0]; return tgt === p; });
@@ -905,7 +905,8 @@ const jget = d => (S.journal || {})[d] || [];
 const jviews = d => jget(d);
 const jview = b => b;
 function jfind(id) { for (const d in (S.journal || {})) { const i = S.journal[d].findIndex(x => x.id === id); if (i >= 0) { const raw = S.journal[d][i]; return { arr: S.journal[d], i, raw, b: raw, d }; } } return null; }
-const jpath = b => { const sj = subj(b.subjectId), sb = subOf(sj, b.subId), cp = compOf(sb, b.compId); return [sj, sb, cp].filter(Boolean).map(x => x.name).join(" › "); };
+const jpath1 = b => { const sj = subj(b.subjectId), sb = subOf(sj, b.subId), cp = compOf(sb, b.compId); return [sj, sb, cp].filter(Boolean).map(x => x.name).join(" › "); };
+const jpath = b => [b, ...(b.more || [])].map(jpath1).filter(Boolean).join(" · ");   // matière › sous-matière › compétence, plus celles ajoutées avec « + » dans le même bloc
 const JPAL = ["", "#d6336c", "#e8590c", "#c98a00", "#2f9e44", "#1c7ed6", "#7048e8", "#c92a2a"];
 let jLastNow = "";
 function jNowId(d) {   // bloc en cours à l'heure actuelle (aujourd'hui seulement)
@@ -921,13 +922,14 @@ function jblock(b, i, n) {
   if (b.type === "sep") return `<div class="jsepb" id="jb-${b.id}">${times}<input type="text" class="sp" data-jf="${b.id}|label" value="${esc(b.label || "")}" placeholder="Récréation, pause déjeuner…" style="font-weight:700"><span class="row" style="gap:4px">${mv}</span></div>`;
   const sj = subj(b.subjectId), sb = subOf(sj, b.subId);
   const opt = (arr, cur) => `<option value="">—</option>` + arr.map(x => `<option value="${x.id}" ${x.id === cur ? "selected" : ""}>${esc(x.name)}</option>`).join("");
+  const extra = (b.more || []).map((m, k) => { const sj2 = subj(m.subjectId), sb2 = subOf(sj2, m.subId); return `<div class="row" style="margin-top:6px"><select data-jsel2="${b.id}|${k}|subjectId" class="sp" title="Matière">${opt(S.subjects, m.subjectId)}</select><select data-jsel2="${b.id}|${k}|subId" class="sp" ${sj2 ? "" : "disabled"} title="Sous-matière">${opt(sj2 ? sj2.subs : [], m.subId)}</select><select data-jsel2="${b.id}|${k}|compId" class="sp" ${sb2 ? "" : "disabled"} title="Compétence">${opt(sb2 ? (sb2.comps || []) : [], m.compId)}</select><button class="btn sm dan" data-jmdel="${b.id}|${k}" title="Retirer cette ligne">✕</button></div>`; }).join("");
   const links = (b.links || []).map((l, k) => `<span class="jlk"><a href="${esc(fixUrl(l.url))}" target="_blank" rel="noopener">🔗 ${esc(l.label || l.url)}</a><button class="btn sm dan" data-jldel="${b.id}|${k}" title="Retirer ce lien">✕</button></span>`).join("");
   return `<div class="jb" id="jb-${b.id}">${times}<div class="jmain">
     <div class="row"><input type="text" class="sp" data-jf="${b.id}|title" value="${esc(b.title || "")}" placeholder="Titre (ex. Lecture – Le loup et les 7 chevreaux)" style="font-weight:700${b.color ? ";color:" + b.color : ""}"><span class="row" style="gap:4px">${mv}</span></div>
     <div class="row" style="margin-top:6px;gap:7px"><span class="muted">🎨 Couleur du titre</span>${JPAL.map(c => `<button class="swc ${(b.color || "") === c ? "on" : ""}" data-jcol="${b.id}|${c}" style="background:${c || "#fff"}" title="${c ? "Colorer le titre" : "Couleur par défaut"}">${c ? "" : "∅"}</button>`).join("")}</div>
     <div class="row" style="margin-top:6px"><select data-jsel="${b.id}|subjectId" class="sp" title="Matière (issue des Progressions)">${opt(S.subjects, b.subjectId)}</select>
       <select data-jsel="${b.id}|subId" class="sp" ${sj ? "" : "disabled"} title="Sous-matière">${opt(sj ? sj.subs : [], b.subId)}</select>
-      <select data-jsel="${b.id}|compId" class="sp" ${sb ? "" : "disabled"} title="Compétence">${opt(sb ? (sb.comps || []) : [], b.compId)}</select></div>
+      <select data-jsel="${b.id}|compId" class="sp" ${sb ? "" : "disabled"} title="Compétence">${opt(sb ? (sb.comps || []) : [], b.compId)}</select><button class="btn sm pri" data-jplus="${b.id}" title="Ajouter une autre matière / sous-matière / compétence dans ce bloc">＋</button></div>${extra}
     <textarea data-jf="${b.id}|text" rows="4" placeholder="Déroulé, consignes, matériel, différenciation…" style="width:100%;margin-top:6px">${esc(b.text || "")}</textarea>
     <div class="row" style="margin-top:6px">${links}<button class="chip" style="padding:4px 9px" data-jlink="${b.id}">🔗 Ajouter un lien</button></div></div></div>`;
 }
@@ -1630,7 +1632,7 @@ const actions = {
 
 /* ---------- Événements ---------- */
 document.addEventListener("click", ev => {
-  const t = ev.target.closest("[data-go],[data-cat],[data-cv],[data-nav],[data-mdl],[data-dec2],[data-decm2],[data-inc],[data-dec],[data-decm],[data-lend],[data-lend2],[data-inc2],[data-tbl],[data-nt],[data-edit],[data-deval],[data-an],[data-act],[data-ds],[data-di],[data-dsj],[data-dsb],[data-add],[data-addsb],[data-addcp],[data-dcp],[data-dfield],[data-bdet],[data-fab3],[data-ap],[data-apn],[data-apf],[data-apv],[data-tdim],[data-fmove],[data-fgo],[data-fan],[data-sort],[data-ptab],[data-ptog],[data-pmv],[data-pdel],[data-padd],[data-pab],[data-pev],[data-plink],[data-pall],[data-eexcl],[data-psv],[data-jadd],[data-jmv],[data-jdel],[data-jlink],[data-jldel],[data-jnav],[data-jday],[data-jsort],[data-sday],[data-jmode],[data-jcopy],[data-cmv],[data-cday],[data-cedit],[data-cdel],[data-cadd],[data-ccancel],[data-cimpdel],[data-pgo],[data-jgo],[data-fab2],[data-jcol],[data-jtcol],[data-top],[data-gofiche],[data-tdadd],[data-tdfold],[data-tddel],[data-tdmv],[data-tdtop],[data-tdnewbtn],[data-tdchk],[data-tdx],[data-tdclear],[data-tdsd],[data-tdst],[data-tdall],[data-tdmiss]");
+  const t = ev.target.closest("[data-go],[data-cat],[data-cv],[data-nav],[data-mdl],[data-jplus],[data-jmdel],[data-dec2],[data-decm2],[data-inc],[data-dec],[data-decm],[data-lend],[data-lend2],[data-inc2],[data-tbl],[data-nt],[data-edit],[data-deval],[data-an],[data-act],[data-ds],[data-di],[data-dsj],[data-dsb],[data-add],[data-addsb],[data-addcp],[data-dcp],[data-dfield],[data-bdet],[data-fab3],[data-ap],[data-apn],[data-apf],[data-apv],[data-tdim],[data-fmove],[data-fgo],[data-fan],[data-sort],[data-ptab],[data-ptog],[data-pmv],[data-pdel],[data-padd],[data-pab],[data-pev],[data-plink],[data-pall],[data-eexcl],[data-psv],[data-jadd],[data-jmv],[data-jdel],[data-jlink],[data-jldel],[data-jnav],[data-jday],[data-jsort],[data-sday],[data-jmode],[data-jcopy],[data-cmv],[data-cday],[data-cedit],[data-cdel],[data-cadd],[data-ccancel],[data-cimpdel],[data-pgo],[data-jgo],[data-fab2],[data-jcol],[data-jtcol],[data-top],[data-gofiche],[data-tdadd],[data-tdfold],[data-tddel],[data-tdmv],[data-tdtop],[data-tdnewbtn],[data-tdchk],[data-tdx],[data-tdclear],[data-tdsd],[data-tdst],[data-tdall],[data-tdmiss]");
   if (!t) return; const d = t.dataset;
   if (d.go) return go(d.go);
   if (d.cv) { cview[skey(page)] = d.cv; return render(); }
@@ -1767,6 +1769,8 @@ document.addEventListener("click", ev => {
   if (d.sort) { const [id, k, ty] = d.sort.split("|"), s = sorts[id]; if (!s || s.k !== k) sorts[id] = { k, d: ty === "n" ? "desc" : "asc" }; else if ((ty === "n" && s.d === "desc") || (ty !== "n" && s.d === "asc")) sorts[id].d = ty === "n" ? "asc" : "desc"; else delete sorts[id]; return render(); }
   if (d.fmove) { const [id, k] = d.fmove.split("|"), i = S.fields.findIndex(f => f.id === id), j = i + (+k); if (i < 0 || j < 0 || j >= S.fields.length) return; [S.fields[i], S.fields[j]] = [S.fields[j], S.fields[i]]; save(); return render(); }
   if (d.fan) { const f = S.fields.find(x => x.id === d.fan); f.inAn = !f.inAn; save(); return render(); }
+  if (d.jplus) { const r = jfind(d.jplus); if (!r) return; (r.b.more = r.b.more || []).push({ subjectId: "", subId: "", compId: "" }); save(); return render(); }
+  if (d.jmdel) { const [id, k] = d.jmdel.split("|"), r = jfind(id); if (!r || !r.b.more) return; r.b.more.splice(+k, 1); if (!r.b.more.length) delete r.b.more; save(); return render(); }
   if (d.mdl !== undefined) { mdl = d.mdl || null; return render(); }
   if (d.dfield) { const f = S.fields.find(x => x.id === d.dfield); if (!confirm(`Supprimer le champ « ${f.name} » ? Les informations déjà saisies dans ce champ seront perdues.`)) return; S.fields = S.fields.filter(x => x.id !== d.dfield); Object.values(S.info).forEach(o => delete o[d.dfield]); save(); return render(); }
   if (d.add) {
@@ -1810,6 +1814,7 @@ document.addEventListener("change", ev => {
     else if (k === "dur") { const m = parseInt(v, 10); if (Number.isFinite(m) && m >= 0) { if (b.from) b.to = tAdd(b.from, m); else if (b.to) b.from = tAdd(b.to, -m); else return toast("Renseigne d'abord l'heure de début"); } }
     else b.to = v;
     jSortDay(r.arr); save(); render(); const e = document.getElementById("jb-" + id); if (e) { const y = e.getBoundingClientRect(); if (y.top < 60 || y.bottom > innerHeight) e.scrollIntoView({ block: "center" }); } return; }
+  if (d.jsel2) { const [id, k, f] = d.jsel2.split("|"), r = jfind(id), m = r && r.b.more && r.b.more[+k]; if (!m) return; m[f] = t.value; if (f === "subjectId") { m.subId = ""; m.compId = ""; } if (f === "subId") m.compId = ""; save(); return render(); }
   if (d.jsel) { const [id, k] = d.jsel.split("|"), r = jfind(id); if (!r) return; r.b[k] = t.value; if (k === "subjectId") { r.b.subId = ""; r.b.compId = ""; } if (k === "subId") r.b.compId = ""; save(); return render(); }
   if (d.ab) { const [k, w] = d.ab.split("|"), v = parseFloat(String(t.value).replace(",", ".")); S.abounds = S.abounds || {}; const o = S.abounds[k] = S.abounds[k] || {}; const prev = o[w]; if (Number.isFinite(v)) o[w] = Math.max(0, Math.min(10, v)); if ((o.min ?? 3) > (o.max ?? 10)) { toast("Le minimum doit rester ≤ au maximum"); if (prev === undefined) delete o[w]; else o[w] = prev; } save(); return render(); }
   if (d.pper) { const c = findComp(d.pper); if (c && !perBusy && c.per !== t.value.trim()) { perBusy = true; c.per = t.value.trim(); const n = splitComp(c); sortByPeriod(c); save(); try { render(); } finally { perBusy = false; } if (n > 1) toast(`Compétence dupliquée sur ${n} périodes ✓`); } return; }
