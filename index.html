@@ -111,6 +111,7 @@ th{font-size:.78rem;color:var(--muted);vertical-align:bottom}
 #sheetIn .jsep td{background:#eef1fb;text-align:center;font-weight:700;color:#2a45b0;padding:4px;font-size:10.5px}
 .tdst{display:inline-flex;gap:8px;align-items:center;padding:6px 12px;border:1px solid #d5daea;border-radius:999px;background:#fff;margin:3px;cursor:pointer}.tdst.ok{background:#dff5e6;border-color:#9bd7ae}
 .tdst input,.tdrow input[type=checkbox]{flex:none;width:22px;height:22px;margin:0}.tdrow{padding:3px 0;border-top:1px solid #eef0f5}.tdtxt{border:0!important;background:transparent!important;box-shadow:none!important}.tdtitle{font-weight:800;font-size:1.1rem}@media(max-width:560px){.tdrow,.card>.row:has(.tdtitle){flex-wrap:wrap}.tdrow textarea.tdta{flex:1 1 calc(100% - 40px)}.tdrow .btn{margin-left:auto}.tdrow .btn+.btn{margin-left:0}.tdrow textarea.tdta+.btn{margin-left:auto}textarea.tdtitle{flex:1 1 100%;min-width:0}}.aplist{padding:6px 10px}.aprow{display:flex;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid #eef0f6}.aprow.off .apn{opacity:.45;text-decoration:line-through}.apn{flex:1 1 auto;min-width:0;font-weight:700;font-size:1.02rem}.apb{flex:none;min-width:70px;padding:11px 8px;border-radius:12px;border:2px solid #d7dcec;background:#fff;font-weight:700;font-size:.9rem;cursor:pointer;color:#445}.apb.abs{background:#e03131;border-color:#e03131;color:#fff}.apc{min-width:44px;padding:11px 6px;opacity:.45;filter:grayscale(.6)}.apc.on{opacity:1;filter:none;background:#fff3bf;border-color:#f2b705}@media(max-width:480px){.aprow{flex-wrap:wrap}.apn{flex:1 0 100%}.apb{flex:1 1 0}}
+.mirl{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:.9rem;color:#556}.mirl input{flex:1;min-width:0;padding:6px 8px;font-size:.95rem}
 textarea.tdta{resize:none;overflow:hidden;min-height:38px;line-height:1.3;font-family:inherit;word-break:break-word}.tdrow.dn .tdtxt{text-decoration:line-through;color:#8a90a5}
 .swc{width:30px;height:30px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #c9d2e4;cursor:pointer;padding:0;font-size:.8rem;color:#8a90a5}.swc.on{box-shadow:0 0 0 3px #2a45b0}
 .jread .jtab tr.jnow td{background:#fff1a8}.jread .jtab tr.jnow td.jt{background:#ffd43b;font-weight:800}.jread .jtab tr.jnow td:first-child{box-shadow:inset 6px 0 0 #f08c00}
@@ -247,6 +248,7 @@ function fix(d) {
   const b = defaults();
   d.items = Object.assign({ sons: [], ecriture: [], vie: [], matos: [] }, d.items);
   ["counts", "term", "lent"].forEach(k => d[k] = d[k] || {});
+  if (d.miroir) Object.keys(d.miroir).forEach(k => { const v = d.miroir[k]; if (v && typeof v === "object") d.miroir[k] = Object.keys(v).join(", "); });
   d.subjects = d.subjects || b.subjects; d.evals = d.evals || [];
   d.abounds = d.abounds || {}; d.todo = Array.isArray(d.todo) ? d.todo : []; d.journal = d.journal || {};  if (!Array.isArray(d.schoolDays) || !d.schoolDays.length) d.schoolDays = [1, 2, 3, 4, 5]; jMigrate(d); Object.values(d.journal).forEach(a => a.forEach(x => { delete x.dailyOf; })); delete d.jdaily; delete d.jskip; d.cal = d.cal || []; d.jtitles = d.jtitles || {}; d.fields = d.fields || b.fields; d.info = d.info || {};
   if (!d.autoFields) { d.autoFields = true; d.fields.unshift({ id: uid(), name: "Date de naissance", type: "text", auto: "birth" }, { id: uid(), name: "Redoublant", type: "text", auto: "redo" }); }
@@ -450,6 +452,9 @@ function counterTiles(mod, view, sid, it) {
     return `<div class="tile" data-inc2="${mod}|${s.id}|${it.id}"><button class="mn" data-dec2="${mod}|${s.id}|${it.id}">−</button><span class="t">${esc(s.name)}</span>${cumulMods.includes(mod) ? one(tot(s.id, mod, it.id)) : two(cnt(s.id, mod, it.id), tot(s.id, mod, it.id))}</div>`;
   }).join("");
 }
+/* ---- Lettres / chiffres souvent écrits en miroir : un champ libre par élève, dans le bloc Écriture ---- */
+const mirOf = sid => { const v = (S.miroir || {})[sid]; return typeof v === "string" ? v : ""; };
+const mirField = sid => `<label class="mirl">🪞 Écrits en miroir : <input type="text" data-mirtxt="${sid}" value="${esc(mirOf(sid))}" placeholder="ex. b, d, 3, 5…" maxlength="60"></label>`;
 function viewCounters(p) {
   if (!S.students.length) return emptyStudents();
   const combo = p === "sons" || p === "ecriture";                       // une seule page : Écriture en haut, Sons dessous
@@ -466,7 +471,7 @@ function viewCounters(p) {
   mods.forEach(mod => {
     const items = S.items[mod], titre = combo ? `<h3 style="margin-bottom:10px">${TITLE[mod]}</h3>` : "";
     if (!items.length) { h += `<div class="card">${titre}<p class="muted">Aucune ligne pour « ${TITLE[mod]} ». Ajoute-en dans ⚙️ Paramètres › Compteurs.</p></div>`; return; }
-    if (view === "eleve") { h += `<div class="card">${combo ? titre : ""}<div class="tiles">${counterTiles(mod, "eleve", sid)}</div></div>`; return; }
+    if (view === "eleve") { h += `<div class="card">${combo ? titre : ""}<div class="tiles">${counterTiles(mod, "eleve", sid)}</div>${mod === "ecriture" ? mirField(sid) : ""}</div>`; return; }
     if (!items.some(i => i.id === citem[mod])) citem[mod] = items[0].id;
     const it = items.find(i => i.id === citem[mod]);
     h += `<div class="card">${combo ? titre : ""}<div class="row" style="margin-bottom:12px"><label class="sp">${mod === "matos" ? "Objet" : "Élément"} :
@@ -494,7 +499,8 @@ function goPerDefault() {
 }
 function goTo(id) { setTimeout(() => { const e = document.getElementById(id); if (!e) return; e.scrollIntoView({ block: "center", behavior: "smooth" }); e.classList.add("flash"); setTimeout(() => e.classList.remove("flash"), 1900); }, 30); }
 const goAt = (a, b = "", c = "") => `data-pgo="${a}|${b}|${c}" title="Cliquer pour modifier" style="cursor:pointer"`;   // un clic ouvre l'édition à cet endroit
-const compEvals = c => S.evals.filter(e => e.compId === c.id && Object.values(e.grades || {}).some(v => typeof v === "number"));
+const evalsAll = () => { const m = new Map(); (S.evalsArch || []).concat(S.evals).forEach(e => m.set(e.id, e)); return [...m.values()]; };   // évaluations du trimestre + celles des trimestres précédents (archivées)
+const compEvals = c => evalsAll().filter(e => e.compId === c.id && Object.values(e.grades || {}).some(v => typeof v === "number"));
 const periodsOf = c => [...new Set((String(c.per || "").match(/P\s*[1-9]/gi) || []).map(x => "P" + x.replace(/\D/g, "")))].sort();
 const fixUrl = u => { u = String(u || "").trim(); return !u || /^[a-z][a-z0-9+.-]*:/i.test(u) ? u : "https://" + u.replace(/^\/+/, ""); };   // « www.site.fr » sans https:// devenait un lien relatif (cassé, notamment dans le PDF)
 const lk = c => c.url ? ` <a class="plk" href="${esc(fixUrl(c.url))}" target="_blank" rel="noopener">🔗</a>` : "";
@@ -566,7 +572,7 @@ function groupsOf() {
   }));
   return out;
 }
-function seriesEvals(g) { const ids = new Set(g.cs.map(c => c.id)); return allEvals().filter(e => !e.auto && !e.excl && ids.has(e.compId)).sort((a, b) => a.date.localeCompare(b.date)); }
+function seriesEvals(g) { const ids = new Set(g.cs.map(c => c.id)); return evalsAll().filter(e => !e.auto && !e.excl && ids.has(e.compId)).sort((a, b) => a.date.localeCompare(b.date)); }
 function suiviOf(g, sid, E) {   // 1re et dernière évaluation de l'élève sur la série (notes /10)
   const l = (E || seriesEvals(g)).filter(e => typeof e.grades[sid] === "number");
   if (!l.length) return null;
@@ -1193,7 +1199,7 @@ function bilanEleve(sid) {
     const mine = L.reduce((a, x) => a + x.v, 0), cm = mean(totals) || 0, mx = Math.max(1, mine, ...totals);
     const lv = cm === 0 ? (mine === 0 ? "g" : "r") : mine <= cm ? "g" : mine <= cm * 1.5 ? "o" : "r";   // moins = mieux
     const cur = `<div class="bcur2" title="L'élève par rapport à la moyenne de la classe (repère noir)">${barSvg(mine / mx * 100, cm / mx * 100, lv, 10)}</div>`;
-    return `<div class="bbox bcnt"><h5 class="bclick" data-bdet="${key}" title="Cliquer pour voir le détail"><span>${ico2} ${title}</span><span class="bhint">▾ détail</span><span class="bn">${mine}</span></h5>${[...L].filter(x => x.v > 0).sort((a, b) => b.v - a.v).slice(0, 4).map(x => `<div class="burow"><span>${esc(x.name)}</span><b>${x.v}</b></div>`).join("") || '<div class="bmuted">Rien à signaler</div>'}${cur}<div class="bmuted" style="margin-top:3px">Moyenne de la classe : ${fmt(cm)}</div></div>`;
+    return `<div class="bbox bcnt"><h5 class="bclick" data-bdet="${key}" title="Cliquer pour voir le détail"><span>${ico2} ${title}</span><span class="bhint">▾ détail</span><span class="bn">${mine}</span></h5>${[...L].filter(x => x.v > 0).sort((a, b) => b.v - a.v).slice(0, 4).map(x => `<div class="burow"><span>${esc(x.name)}</span><b>${x.v}</b></div>`).join("") || '<div class="bmuted">Rien à signaler</div>'}${cur}<div class="bmuted" style="margin-top:3px">Moyenne de la classe : ${fmt(cm)}</div>${key === "ecriture" && mirOf(sid) ? `<div class="bmuted" style="margin-top:2px;font-size:.78em">🪞 Miroir : ${esc(mirOf(sid))}</div>` : ""}</div>`;
   };
   const counters = box("Sons", "sons", "🔊") + box("Écriture", "ecriture", "✍️") + box("Matériel prêté", "matos", "📦") + box("Vie de classe", "vie", "🙂");
   return `<div class="bil"><div class="bhead"><h1>${esc(s.name)}</h1><span>Bilan de l'élève · ${date}</span></div>${s.excl ? `<div class="bmuted" style="margin:-6px 0 10px">ℹ️ Cet élève n'est pas compté dans les moyennes de la classe.</div>` : ""}${hero}
@@ -1218,10 +1224,11 @@ function counterDetails(sid) {
   const T = modTotals(sid), name = { sons: "🔊 Sons", ecriture: "✍️ Écriture", vie: "🙂 Vie de classe", matos: "📦 Matériel prêté" }, unit = { sons: "ratés", ecriture: "relevés", vie: "relevés", matos: "prêts" };
   return ["sons", "ecriture", "vie", "matos"].filter(m => bdet[sid + "|" + m]).map(m => {
     const L = m === "matos" ? S.items.matos.map(it => ({ name: it.name, v: tot(sid, "matos", it.id), c: mean(counted().map(x => tot(x.id, "matos", it.id))) })) : T[m];
-    const hit = L.filter(x => x.v > 0).sort((a, b) => b.v - a.v), none = L.length - hit.length, total = hit.reduce((a, x) => a + x.v, 0);
+    const colr = x => x.c !== null && x.v > x.c * 1.5 ? "r" : x.c !== null && x.v > x.c ? "o" : "g", rk = { r: 0, o: 1, g: 2 };
+    const hit = L.filter(x => x.v > 0).sort((a, b) => rk[colr(a)] - rk[colr(b)] || b.v - a.v), none = L.length - hit.length, total = hit.reduce((a, x) => a + x.v, 0);
     return `<div class="card"><div class="row"><h3 class="sp" style="margin:0">${name[m]} — détail de ${esc(stud(sid).name)}</h3><button class="btn sm" data-bdet="${m}">✕ Fermer</button></div>
-      <p class="muted" style="margin:6px 0">${hit.length ? `${total} ${unit[m]} sur ${hit.length} ligne${hit.length > 1 ? "s" : ""}, du plus fréquent au moins fréquent (cumul du trimestre). « classe » = moyenne des élèves comptés.` : "Rien à signaler pour cet élève."}</p>
-      ${hit.map(x => `<div class="dev" style="padding-left:4px"><span class="dn"><b>${esc(x.name)}</b></span><span class="bp ${x.c !== null && x.v > x.c * 1.5 ? "r" : x.c !== null && x.v > x.c ? "o" : "g"}">×${x.v}</span><span class="bc">classe ${x.c === null ? "–" : fmt(x.c)}</span></div>`).join("")}
+      <p class="muted" style="margin:6px 0">${hit.length ? `${total} ${unit[m]} sur ${hit.length} ligne${hit.length > 1 ? "s" : ""}, classées par couleur selon l'écart avec la moyenne de la classe : 🔴 rouges d'abord (bien au-dessus), puis 🟠 oranges, puis 🟢 vertes ; à couleur égale, du plus fréquent au moins fréquent (cumul du trimestre). « classe » = moyenne des élèves comptés.` : "Rien à signaler pour cet élève."}</p>
+      ${hit.map(x => `<div class="dev" style="padding-left:4px"><span class="dn"><b>${esc(x.name)}</b></span><span class="bp ${colr(x)}">×${x.v}</span><span class="bc">classe ${x.c === null ? "–" : fmt(x.c)}</span></div>`).join("")}
       ${none > 0 && hit.length ? `<p class="muted" style="margin-top:6px">${none} autre${none > 1 ? "s" : ""} ligne${none > 1 ? "s" : ""} sans rien à signaler.</p>` : ""}</div>`;
   }).join("");
 }
@@ -1550,10 +1557,10 @@ const actions = {
     save(); render(); toast("Semaine archivée — vie de classe et matériel remis à zéro ✓");
   },
   newTerm() {
-    if (!confirm("NOUVEAU TRIMESTRE\n\n• Une sauvegarde complète (JSON) est téléchargée d'abord.\n• Évaluations, compteurs, cumul et prêts sont remis à zéro.\n• Élèves, matières et lignes de compteurs sont conservés.\n\nContinuer ?")) return;
+    if (!confirm("NOUVEAU TRIMESTRE\n\n• Une sauvegarde complète (JSON) est téléchargée d'abord.\n• Évaluations, compteurs, cumul, prêts, absences et lettres en miroir sont remis à zéro (les évaluations restent archivées pour le suivi annuel et l'état « évaluée » des progressions) (l'historique de la page Appel est conservé).\n• Élèves, matières et lignes de compteurs sont conservés.\n\nContinuer ?")) return;
     download("sauvegarde-fin-trimestre-" + today() + ".json", JSON.stringify(S, null, 2));
     exportCsv();
-    setTimeout(() => { S.evals = []; S.counts = {}; S.term = {}; S.lent = {}; apReset(true); draft = { subjectId: "", subId: "", compId: "", label: "", date: today(), max: 10, grades: {}, editId: null }; saveDraft(); save(); render(); toast("Nouveau trimestre prêt ✓"); }, 900);
+    setTimeout(() => { S.evalsArch = evalsAll(); S.evals = []; S.counts = {}; S.term = {}; S.lent = {}; S.miroir = {}; apReset(true); draft = { subjectId: "", subId: "", compId: "", label: "", date: today(), max: 10, grades: {}, editId: null }; saveDraft(); save(); render(); toast("Nouveau trimestre prêt ✓"); }, 900);
   },
   csv() { exportCsv(); },
   json() { download("classe-ce1-" + today() + ".json", JSON.stringify(S, null, 2)); },
@@ -1736,6 +1743,7 @@ document.addEventListener("click", ev => {
 document.addEventListener("change", ev => {
   const t = ev.target, d = t.dataset;
   if (d.pn) { const [kind, a, b, c] = d.pn.split("|"), v = t.value.trim(); if (v) { if (kind === "sj") subj(a).name = v; else if (kind === "sb") subOf(subj(a), b).name = v; else subOf(subj(a), b).comps.find(x => x.id === c).name = v; save(); } return render(); }
+  if (d.mirtxt !== undefined) { S.miroir = S.miroir || {}; const v = t.value.trim(); if (v) S.miroir[d.mirtxt] = v; else delete S.miroir[d.mirtxt]; save(); return; }
   if (d.apdate !== undefined) { if (/^\d{4}-\d{2}-\d{2}$/.test(t.value)) { apDate = t.value; render(); } return; }
   if (d.apstart !== undefined) { if (/^\d{4}-\d{2}-\d{2}$/.test(t.value)) { const old = S.absStart; S.absStart = t.value; S.absResets = [...new Set([...(S.absResets || []).filter(x => x !== old), t.value])].sort(); save(); render(); } return; }
   if (d.apitem !== undefined) { if (t.value) { S.absItem = t.value; save(); render(); } return; }
