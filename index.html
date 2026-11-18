@@ -325,10 +325,11 @@ const invalidate = () => { _ae = null; };
 
 /* ---------- Moyennes ---------- */
 const on10 = (v, m) => (typeof v === "number" && m) ? v / m * 10 : null;
-function avgOf(sid, f) {   // moyenne pondérée par les coefficients ; les évaluations « hors moyenne » ne comptent pas
-  let sw = 0, sv = 0;
-  allEvals().filter(f).forEach(e => { if (e.excl) return; const v = on10(e.grades[sid], e.max), w = e.coef == null ? 1 : +e.coef; if (v === null || !(w > 0)) return; sw += w; sv += w * v; });
-  return sw ? sv / sw : null;
+function avgOf(sid, f) {   // chaque COMPÉTENCE pèse pareil : moyenne pondérée (coefficients) au sein d'une compétence, puis moyenne simple des compétences ; les évaluations « hors moyenne » ne comptent pas
+  const B = {};
+  allEvals().filter(f).forEach(e => { if (e.excl) return; const v = on10(e.grades[sid], e.max), w = e.coef == null ? 1 : +e.coef; if (v === null || !(w > 0)) return; const k = (e.subId || "") + "|" + (e.compId || ""), x = B[k] = B[k] || { sw: 0, sv: 0 }; x.sw += w; x.sv += w * v; });
+  const m = Object.values(B).map(x => x.sv / x.sw);
+  return m.length ? m.reduce((a, b) => a + b, 0) / m.length : null;
 }
 function classAvg(f) { return mean(counted().map(s => avgOf(s.id, f))); }
 const cls = v => v === null ? "" : v >= 7.5 ? "g" : v >= 5 ? "o" : "r";
