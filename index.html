@@ -324,13 +324,17 @@ function autoEvals() {
 }
 let _ae = null;
 const allEvals = () => S.evals.concat(_ae || (_ae = autoEvals()));
-const invalidate = () => { _ae = null; };
+let _cg = null;
+const invalidate = () => { _ae = null; _cg = null; };
+/* Une compétence étalée sur plusieurs périodes (« Poésie P1 », « Poésie P2 ») ne compte qu'une fois : on regroupe sur le nom sans « P1/P2… » */
+const compBase = n => String(n || "").replace(/\s+P[1-9]$/i, "").trim();
+const compGrp = id => { if (!id) return ""; if (!_cg) { _cg = {}; S.subjects.forEach(sj => sj.subs.forEach(sb => (sb.comps || []).forEach(c => { _cg[c.id] = compBase(c.name).toLowerCase() || c.id; }))); } return _cg[id] || id; };
 
 /* ---------- Moyennes ---------- */
 const on10 = (v, m) => (typeof v === "number" && m) ? v / m * 10 : null;
 function avgOf(sid, f) {   // chaque COMPÉTENCE pèse pareil : moyenne pondérée (coefficients) au sein d'une compétence, puis moyenne simple des compétences ; les évaluations « hors moyenne » ne comptent pas
   const B = {};
-  allEvals().filter(f).forEach(e => { if (e.excl) return; const v = on10(e.grades[sid], e.max), w = e.coef == null ? 1 : +e.coef; if (v === null || !(w > 0)) return; const k = (e.subId || "") + "|" + (e.compId || ""), x = B[k] = B[k] || { sw: 0, sv: 0 }; x.sw += w; x.sv += w * v; });
+  allEvals().filter(f).forEach(e => { if (e.excl) return; const v = on10(e.grades[sid], e.max), w = e.coef == null ? 1 : +e.coef; if (v === null || !(w > 0)) return; const k = (e.subId || "") + "|" + compGrp(e.compId), x = B[k] = B[k] || { sw: 0, sv: 0 }; x.sw += w; x.sv += w * v; });
   const m = Object.values(B).map(x => x.sv / x.sw);
   return m.length ? m.reduce((a, b) => a + b, 0) / m.length : null;
 }
@@ -345,7 +349,7 @@ function columns(withComps) {   // colonnes du bilan : sous-matières (et compé
       const f = e => e.subjectId === sj.id && e.subId === sb.id;
       if (!E.some(f)) return;
       cols.push({ label: sj.name + " › " + sb.name, short: sb.name, f, sub: true, sj: sj.name, sjId: sj.id, sbId: sb.id });
-      if (withComps) (sb.comps || []).forEach(c => { const g = e => f(e) && e.compId === c.id; if (E.some(g)) cols.push({ label: sj.name + " › " + sb.name + " › " + c.name, short: c.name, f: g, comp: true, sj: sj.name, sjId: sj.id }); });
+      if (withComps) { const seenG = new Set(); (sb.comps || []).forEach(c => { const gk = compGrp(c.id); if (seenG.has(gk)) return; seenG.add(gk); const nm0 = compBase(c.name) || c.name, g = e => f(e) && compGrp(e.compId) === gk; if (E.some(g)) cols.push({ label: sj.name + " › " + sb.name + " › " + nm0, short: nm0, f: g, comp: true, sj: sj.name, sjId: sj.id }); }); }
     });
     cols.push({ label: sj.name, short: "Moyenne", f: e => e.subjectId === sj.id, sj: sj.name, sjId: sj.id, main: true });
   });
@@ -366,7 +370,7 @@ function classOneTable(col) {
 /* Détail d'une sous-matière : une colonne par compétence (sa moyenne), plus une colonne « Sans compétence » si besoin */
 function classSubTable(col) {
   const sj = subj(col.sjId), sb = (sj ? sj.subs : []).find(b => b.id === col.sbId), E = allEvals().filter(col.f), cl = counted();
-  const cs = ((sb && sb.comps) || []).map(c => ({ k: c.id, name: c.name, f: e => col.f(e) && e.compId === c.id })).filter(c => E.some(c.f));
+  const seenG = new Set(), cs = []; ((sb && sb.comps) || []).forEach(c => { const g = compGrp(c.id); if (seenG.has(g)) return; seenG.add(g); const o = { k: g, name: compBase(c.name) || c.name, f: e => col.f(e) && compGrp(e.compId) === g }; if (E.some(o.f)) cs.push(o); });
   const rest = e => col.f(e) && !((sb && sb.comps) || []).some(c => c.id === e.compId);
   if (E.some(rest)) cs.push({ k: "_sans", name: "Sans compétence", f: rest });
   const rows = sortRows([...S.students].sort(byName), "cone", (st, k) => k === "__n" ? st.name : k === "__a" ? avgOf(st.id, col.f) : avgOf(st.id, (cs.find(c => c.k === k) || { f: () => false }).f));
@@ -1250,9 +1254,10 @@ function mdlHtml(sid) {
       const sb = sj.subs.find(x => x.id === b); if (!sb) return "";
       const f = e => e.subjectId === sj.id && e.subId === sb.id, all = E.filter(f);
       title = `${sj.name} › ${sb.name}`;
-      const comps = (sb.comps || []).filter(c => all.some(e => e.compId === c.id)), rest = all.filter(e => !(sb.comps || []).some(c => c.id === e.compId));
+      const comps = [], seenG = new Set(); (sb.comps || []).forEach(c => { const g = compGrp(c.id); if (!seenG.has(g) && all.some(e => compGrp(e.compId) === g)) { seenG.add(g); comps.push({ g, name: compBase(c.name) || c.name }); } });
+      const rest = all.filter(e => !(sb.comps || []).some(c => c.id === e.compId));
       body = `<details class="dt" open>${mdlSum(sid, "Moyenne de la sous-matière", f, "ds")}</details>`
-        + comps.map(c => `<details class="dt">${mdlSum(sid, c.name, e => f(e) && e.compId === c.id)}${all.filter(e => e.compId === c.id).sort(byDate).map(e => evRowOf(sid, e)).join("")}</details>`).join("")
+        + comps.map(c => `<details class="dt">${mdlSum(sid, c.name, e => f(e) && compGrp(e.compId) === c.g)}${all.filter(e => compGrp(e.compId) === c.g).sort(byDate).map(e => evRowOf(sid, e)).join("")}</details>`).join("")
         + (rest.length ? `<details class="dt">${mdlSum(sid, "Sans compétence", e => f(e) && !(sb.comps || []).some(c => c.id === e.compId))}${rest.sort(byDate).map(e => evRowOf(sid, e)).join("")}</details>` : "");
     } else {
       const all = E.filter(e => e.subjectId === sj.id), direct = all.filter(e => !sj.subs.some(x => x.id === e.subId));
