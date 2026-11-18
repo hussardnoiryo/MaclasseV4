@@ -402,10 +402,11 @@ function viewHome() {
 }
 let lastPage = "";
 function go(p) {
-  if (p === "journal") jmode = "read"; if (p === "prog") { ptab = "per"; goPerDefault(); } if (p === "todo") tdShut = {}; if (p === "appel") { apDate = today(); apFilter = "all"; apView = "day"; } if (p === "fiches") fmode = "read"; if (p === "vie" || p === "matos") delete cview[p];   // affichages par défaut à l'arrivée
+  if (p === "journal") jmode = "read"; if (p === "prog") { ptab = "per"; pfSt = "all"; goPerDefault(); } if (p === "todo") tdShut = {}; if (p === "appel") { apDate = today(); apFilter = "all"; apView = "day"; } if (p === "fiches") fmode = "read"; if (p === "vie" || p === "matos") delete cview[p];   // affichages par défaut à l'arrivée
   if (p === "home") lastPage = page; page = p; try { localStorage.setItem(LS_PAGE, p); } catch (e) {} render(); window.scrollTo(0, 0); if (p === "journal") jScrollNow(); }
 function jScrollNow() { const r = document.querySelector("#main tr.jnow"); if (r) window.scrollTo({ top: Math.max(0, window.scrollY + r.getBoundingClientRect().top - 90), behavior: "instant" }); }   // ouvre le cahier journal en face du créneau en cours
 function render() {
+  jabCache = null;
   invalidate();
   $("#nav").dataset.top = "1"; $("#nav").innerHTML = `<span class="ntt" title="Retour à l'index">${page === "home" ? "🏠 Ma classe CE1" : (PAGES.find(x => x[0] === page) || ["", ""])[1]}</span><span id="sync"></span>`; $("#fab").style.display = page === "home" ? "none" : ""; if (ptab !== "edit") progRead = ptab; { const f2 = $("#fab2"), on = page === "journal" || page === "prog" || (page === "fiches" && !ficheTable && S.students.length && S.fields.length > 0); f2.style.display = on ? "" : "none"; if (on) f2.textContent = (page === "journal" ? jmode === "read" : page === "fiches" ? fmode === "read" : ptab !== "edit") ? "✏️ Éditer" : "👁️ Lire"; }
   paintSync();
@@ -476,9 +477,9 @@ function viewCounters(p) {
 /* ===================== Progressions =====================
    Même arbre que les notes : S.subjects[matière › sous-matière › compétence]. Ajouter ou renommer ici = visible dans Notes (et inversement).
    Par compétence : période (champ libre : P1, P2…), « abordée » (rouge), « évaluée » (vert, automatique si une note existe). */
-let progRead = "per", ptab = "per", popen = {}, pfSubj = "all", pfSb = "all", pfPer = "all", pfInit = false;
-function curPer() {   // période du moment : 1 + nombre de vacances déjà terminées depuis la rentrée (d'après le calendrier) ; à défaut, d'après le mois
-  const t = today(), r0 = rentree() + "-09-01", V = (S.cal || []).filter(e => !e.rec && e.cat === "vacances" && e.date >= r0).map(e => [e.date, e.end || e.date]).sort(), M = [];
+let progRead = "per", ptab = "per", popen = {}, pfSubj = "all", pfSb = "all", pfPer = "all", pfSt = "all", pfInit = false;
+function curPer(t = today()) {   // période du moment : 1 + nombre de vacances déjà terminées depuis la rentrée (d'après le calendrier) ; à défaut, d'après le mois
+  const r0 = rentree() + "-09-01", V = (S.cal || []).filter(e => !e.rec && e.cat === "vacances" && e.date >= r0).map(e => [e.date, e.end || e.date]).sort(), M = [];
   V.forEach(([x, y]) => { const l = M[M.length - 1]; if (l && x <= dAdd(l[1], 4)) { if (y > l[1]) l[1] = y; } else M.push([x, y]); });   // fusionne les vacances accolées
   let n = M.filter(v => v[1] < t).length;
   const md = t.slice(5), m = +t.slice(5, 7), fl = m >= 9 ? (md >= "11-03" ? 1 : 0) : md >= "05-11" ? 4 : md >= "03-09" ? 3 : md >= "01-05" ? 2 : 1;   // plancher d'après la date (limites prudentes, valables pour toutes les zones) si des vacances manquent au calendrier
@@ -524,9 +525,16 @@ function splitComp(c) {   // « P1 P2 P3 » → une compétence par période («
   return ps.length;
 }
 const keysOf = c => { const p = periodsOf(c); return p.length ? p : ["—"]; };
+let jabCache = null;
+function jabOf(c, p) {   // « abordée » automatique : un bloc du cahier journal (déjà passé ou du jour) est rattaché à la compétence
+  if (!jabCache) { jabCache = {}; const t = today(); Object.keys(S.journal || {}).forEach(d => { if (d <= t) (S.journal[d] || []).forEach(b => { if (b.compId) (jabCache[b.compId] = jabCache[b.compId] || []).push(d); }); }); }
+  const ds = jabCache[c.id]; if (!ds) return false;
+  const ps = keysOf(c); if (ps.length < 2) return true;
+  return ds.some(d => { const pd = curPer(d); const tgt = ps.includes(pd) ? pd : ps.filter(k => k < pd).pop() || ps[0]; return tgt === p; });
+}
 function perState(c, p) {
   const first = keysOf(c)[0], ev = compEvals(c).filter(e => (e.per || first) === p);
-  const mev = !!((c.evP || {})[p] || (p === first && c.ev)), mab = !!((c.abP || {})[p] || (p === first && c.ab));
+  const mev = !!((c.evP || {})[p] || (p === first && c.ev)), mab = !!((c.abP || {})[p] || (p === first && c.ab) || jabOf(c, p));
   return { st: (ev.length || mev) ? "ev" : mab ? "ab" : "no", auto: ev.length > 0, n: ev.length, last: ev.map(e => e.date).sort().pop() || "" };
 }
 function compStatus(c, p) {
@@ -609,11 +617,12 @@ function progPeriode() {
   const map = {}; S.subjects.forEach(sj => sj.subs.forEach(sb => (sb.comps || []).forEach(c => { const ps = periodsOf(c); (ps.length ? ps : ["—"]).forEach(p => ((map[p] = map[p] || []).push({ sj, sb, c }))); })));
   const keys = Object.keys(map).sort((a, b) => a === "—" ? 1 : b === "—" ? -1 : a.localeCompare(b));
   const shown = pfPer === "all" ? keys : keys.filter(k => k === pfPer);
-  const body = shown.map(k => { const items = map[k], bySj = {}; items.forEach(x => ((bySj[x.sj.id + "|" + x.sb.id] = bySj[x.sj.id + "|" + x.sb.id] || { sj: x.sj, sb: x.sb, cs: [] }).cs.push(x.c)));
+  const stOk = (c, k) => { const t = compStatus(c, k).st; return pfSt === "all" || (pfSt === "no" ? t === "no" : t === "ab"); };
+  const body = shown.map(k => { const all = map[k], items = all.filter(x => stOk(x.c, k)), bySj = {}; if (!items.length) return pfSt === "all" ? "" : `<section class="psec"><h2>${k === "—" ? "Sans période" : "Période " + k.slice(1)}</h2><p class="muted">Rien à afficher pour ce filtre 🎉</p></section>`; items.forEach(x => ((bySj[x.sj.id + "|" + x.sb.id] = bySj[x.sj.id + "|" + x.sb.id] || { sj: x.sj, sb: x.sb, cs: [] }).cs.push(x.c)));
     const ev = items.filter(x => compStatus(x.c, k).st === "ev").length;
-    return `<section class="psec"><h2>${k === "—" ? "Sans période" : "Période " + k.slice(1)}</h2><div class="muted" style="margin-bottom:6px">${items.length} compétence${items.length > 1 ? "s" : ""} · ${items.filter(x => compStatus(x.c, k).st !== "no").length} abordées · ${ev} évaluées</div>
+    return `<section class="psec"><h2>${k === "—" ? "Sans période" : "Période " + k.slice(1)}</h2><div class="muted" style="margin-bottom:6px">${items.length} compétence${items.length > 1 ? "s" : ""}${pfSt === "all" ? "" : ` sur ${all.length}`} · ${items.filter(x => compStatus(x.c, k).st !== "no").length} abordées · ${ev} évaluées</div>
       ${Object.values(bySj).map(g => `<h3 ${goAt(g.sj.id, g.sb.id)}>${esc(g.sj.name)} <span style="color:#777;font-weight:500">› ${esc(g.sb.name)}</span></h3><table class="ptab"><tbody>${g.cs.map(c => `<tr class="r-${compStatus(c, k).st}" ${goAt(g.sj.id, g.sb.id, c.id)}><td>${esc(c.name)}${lk(c)}</td><td style="width:11em">${stPill(compStatus(c, k))}</td></tr>`).join("")}</tbody></table>`).join("")}</section>`; }).join("");
-  return { title: "Progression par période", filter: `<label>Période : <select data-pf="per"><option value="all">Toutes (une page par période)</option>${keys.map(k => `<option value="${k}" ${k === pfPer ? "selected" : ""}>${k === "—" ? "Sans période" : "Période " + k.slice(1)}</option>`).join("")}</select></label>`, body: body || '<p class="muted">Aucune compétence.</p>' };
+  return { title: "Progression par période", filter: `<label>Afficher : <select data-pf="st"><option value="all" ${pfSt === "all" ? "selected" : ""}>Toutes les compétences</option><option value="no" ${pfSt === "no" ? "selected" : ""}>Non abordées seulement</option><option value="ab" ${pfSt === "ab" ? "selected" : ""}>Reste à évaluer (abordées, pas encore évaluées)</option></select></label> <label>Période : <select data-pf="per"><option value="all">Toutes (une page par période)</option>${keys.map(k => `<option value="${k}" ${k === pfPer ? "selected" : ""}>${k === "—" ? "Sans période" : "Période " + k.slice(1)}</option>`).join("")}</select></label>`, body: body || '<p class="muted">Aucune compétence.</p>' };
 }
 function progViewCard(v) {
   return `<div class="card"><div class="row" style="margin-bottom:10px">${v.filter}<span class="sp"></span><span class="muted">${v.nolegend ? "" : legend}</span><button class="btn pri" data-act="printProg">🖨️ Imprimer</button></div>${v.body}</div>`;
@@ -1693,7 +1702,7 @@ document.addEventListener("click", ev => {
     const first = keysOf(c)[0]; c.abP = c.abP || {}; c.evP = c.evP || {};
     if (c.ab) { c.abP[first] = 1; delete c.ab; } if (c.ev) { c.evP[first] = 1; delete c.ev; }
     const x = perState(c, p);
-    if (d.pab) { if (x.st === "ev") return toast(x.auto ? "Déjà évaluée (une note lui est rattachée)" : "Retire d'abord « Évalué »"); c.abP[p] = c.abP[p] ? 0 : 1; }
+    if (d.pab) { if (jabOf(c, p) && !c.abP[p]) return toast("Abordée automatiquement : un bloc du cahier journal lui est rattaché"); if (x.st === "ev") return toast(x.auto ? "Déjà évaluée (une note lui est rattachée)" : "Retire d'abord « Évalué »"); c.abP[p] = c.abP[p] ? 0 : 1; }
     else { if (x.auto) return toast("Évaluée automatiquement : une note est rattachée à cette compétence"); c.evP[p] = c.evP[p] ? 0 : 1; if (c.evP[p]) c.abP[p] = 1; }
     save(); return render();
   }
@@ -1756,7 +1765,7 @@ document.addEventListener("change", ev => {
   if (d.jsel) { const [id, k] = d.jsel.split("|"), r = jfind(id); if (!r) return; r.b[k] = t.value; if (k === "subjectId") { r.b.subId = ""; r.b.compId = ""; } if (k === "subId") r.b.compId = ""; save(); return render(); }
   if (d.ab) { const [k, w] = d.ab.split("|"), v = parseFloat(String(t.value).replace(",", ".")); S.abounds = S.abounds || {}; const o = S.abounds[k] = S.abounds[k] || {}; const prev = o[w]; if (Number.isFinite(v)) o[w] = Math.max(0, Math.min(10, v)); if ((o.min ?? 3) > (o.max ?? 10)) { toast("Le minimum doit rester ≤ au maximum"); if (prev === undefined) delete o[w]; else o[w] = prev; } save(); return render(); }
   if (d.pper) { const c = findComp(d.pper); if (c && !perBusy && c.per !== t.value.trim()) { perBusy = true; c.per = t.value.trim(); const n = splitComp(c); sortByPeriod(c); save(); try { render(); } finally { perBusy = false; } if (n > 1) toast(`Compétence dupliquée sur ${n} périodes ✓`); } return; }
-  if (d.pf) { if (d.pf === "subj") { pfSubj = t.value; pfSb = "all"; } else if (d.pf === "sb") pfSb = t.value; else pfPer = t.value; return render(); }
+  if (d.pf) { if (d.pf === "subj") { pfSubj = t.value; pfSb = "all"; } else if (d.pf === "sb") pfSb = t.value; else if (d.pf === "st") pfSt = t.value; else pfPer = t.value; return render(); }
   if (d.selfiche !== undefined) { ficheSel = t.value; return render(); }
   if (d.fi) { const [s, f] = d.fi.split("|"); ((S.info = S.info || {})[s] = S.info[s] || {})[f] = t.value; save(); if (t.type === "tel" || t.type === "email") render(); return; }
   if (d.birth) { const st = stud(d.birth); if (st) { st.birth = t.value || undefined; save(); render(); } return; }
