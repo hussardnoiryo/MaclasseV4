@@ -91,6 +91,7 @@ th{font-size:.78rem;color:var(--muted);vertical-align:bottom}
 .bcur{flex:none;width:100%;height:.8em;margin-top:8px}
 .bbar2{flex:1;min-width:30px;display:block}.bsvg{display:block;overflow:visible}.bcur2{margin-top:8px}
 @media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.mdlbg{position:fixed;inset:0;background:rgba(20,22,40,.5);z-index:300}.mdlbox{position:fixed;z-index:301;left:50%;top:50%;transform:translate(-50%,-50%);width:min(680px,94vw);max-height:84vh;overflow:auto;background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 12px 40px rgba(0,0,0,.35)}.brow.bclick:hover,.bch.bclick:hover{background:#eef2ff;border-radius:6px}@media print{.mdlbg,.mdlbox{display:none!important}}
 .bclick{cursor:pointer;gap:6px}.bclick:hover{color:#2a45b0}.bhint{font-size:.72em;font-weight:500;color:#2a45b0;margin-left:2px}.bclick .bn{margin-left:auto}#sheetIn .bhint{display:none}
 .bfich{margin-bottom:10px;cursor:pointer}.bfich:hover{box-shadow:0 0 0 2px var(--blue)}#sheetIn .bfich{cursor:auto;box-shadow:none}.bfg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:4px 16px}.bfi{padding:3px 0;border-bottom:1px solid #eef0f6;min-width:0}.bfl{grid-column:1/-1}.bfn{display:block;font-size:.75em;color:#777;font-weight:700;text-transform:uppercase;letter-spacing:.02em}.bfv{white-space:pre-wrap;overflow-wrap:anywhere}
 .ctab th.gh{border-bottom:2px solid #3b5bdb;color:#2a45b0;font-size:.82rem}.ctab th,.ctab td{font-size:.85rem;padding:5px 5px}.ctab td.cmain,.ctab th.cmain{background:#f4f6ff;border-left:1px solid #d6dce8}.ctab tr.clrow td{border-top:2px solid #3b5bdb;font-weight:700}.ctab td:first-child{text-align:left}
@@ -343,7 +344,7 @@ function columns(withComps) {   // colonnes du bilan : sous-matières (et compé
     if (isDetailCols(sj.name)) sj.subs.forEach(sb => {
       const f = e => e.subjectId === sj.id && e.subId === sb.id;
       if (!E.some(f)) return;
-      cols.push({ label: sj.name + " › " + sb.name, short: sb.name, f, sub: true, sj: sj.name, sjId: sj.id });
+      cols.push({ label: sj.name + " › " + sb.name, short: sb.name, f, sub: true, sj: sj.name, sjId: sj.id, sbId: sb.id });
       if (withComps) (sb.comps || []).forEach(c => { const g = e => f(e) && e.compId === c.id; if (E.some(g)) cols.push({ label: sj.name + " › " + sb.name + " › " + c.name, short: c.name, f: g, comp: true, sj: sj.name, sjId: sj.id }); });
     });
     cols.push({ label: sj.name, short: "Moyenne", f: e => e.subjectId === sj.id, sj: sj.name, sjId: sj.id, main: true });
@@ -353,6 +354,7 @@ function columns(withComps) {   // colonnes du bilan : sous-matières (et compé
 let classComps = false, classOne = "";
 /* Détail d'une seule compétence : une ligne par élève, sa moyenne et chaque évaluation de cette compétence */
 function classOneTable(col) {
+  if (col.sub && !col.comp) return classSubTable(col);
   const ev = allEvals().filter(col.f).sort((a, b) => (a.date || "").localeCompare(b.date || "")), cl = counted();
   const rows = sortRows([...S.students].sort(byName), "cone", (st, k) => k === "__n" ? st.name : k === "__a" ? avgOf(st.id, col.f) : on10((ev.find(e => e.id === k) || { grades: {} }).grades[st.id], (ev.find(e => e.id === k) || {}).max));
   const pl = v => v === null ? '<span class="muted">–</span>' : `<span class="pill ${cls(v)}" style="min-width:0">${fmt(v)}</span>`;
@@ -360,6 +362,19 @@ function classOneTable(col) {
   const body = rows.map(st => `<tr><td>${nm(st)}</td><td class="cmain">${pl(avgOf(st.id, col.f))}</td>${ev.map(e => `<td>${pl(on10(e.grades[st.id], e.max))}</td>`).join("")}</tr>`).join("");
   const last = `<tr class="clrow"><td><b>Classe</b></td><td class="cmain">${pl(classAvg(col.f))}</td>${ev.map(e => `<td>${pl(mean(cl.map(st => on10(e.grades[st.id], e.max))))}</td>`).join("")}</tr>`;
   return `<div class="scroll"><table class="ctab"><thead>${head}</thead><tbody>${body}${last}</tbody></table></div><p class="muted" style="margin-top:6px">Clique sur « Moyenne » (ou une évaluation) pour classer les élèves : ▲ = les plus en difficulté en premier.</p>`;
+}
+/* Détail d'une sous-matière : une colonne par compétence (sa moyenne), plus une colonne « Sans compétence » si besoin */
+function classSubTable(col) {
+  const sj = subj(col.sjId), sb = (sj ? sj.subs : []).find(b => b.id === col.sbId), E = allEvals().filter(col.f), cl = counted();
+  const cs = ((sb && sb.comps) || []).map(c => ({ k: c.id, name: c.name, f: e => col.f(e) && e.compId === c.id })).filter(c => E.some(c.f));
+  const rest = e => col.f(e) && !((sb && sb.comps) || []).some(c => c.id === e.compId);
+  if (E.some(rest)) cs.push({ k: "_sans", name: "Sans compétence", f: rest });
+  const rows = sortRows([...S.students].sort(byName), "cone", (st, k) => k === "__n" ? st.name : k === "__a" ? avgOf(st.id, col.f) : avgOf(st.id, (cs.find(c => c.k === k) || { f: () => false }).f));
+  const pl = v => v === null ? '<span class="muted">–</span>' : `<span class="pill ${cls(v)}" style="min-width:0">${fmt(v)}</span>`;
+  const head = `<tr>${sth("cone", "__n", "t", "Élève")}${sth("cone", "__a", "n", "Moyenne", 'class="cmain"')}${cs.map(c => sth("cone", c.k, "n", esc(c.name))).join("")}</tr>`;
+  const body = rows.map(st => `<tr><td>${nm(st)}</td><td class="cmain">${pl(avgOf(st.id, col.f))}</td>${cs.map(c => `<td>${pl(avgOf(st.id, c.f))}</td>`).join("")}</tr>`).join("");
+  const last = `<tr class="clrow"><td><b>Classe</b></td><td class="cmain">${pl(classAvg(col.f))}</td>${cs.map(c => `<td>${pl(classAvg(c.f))}</td>`).join("")}</tr>`;
+  return `<div class="scroll"><table class="ctab"><thead>${head}</thead><tbody>${body}${last}</tbody></table></div><p class="muted" style="margin-top:6px">Chaque colonne est la moyenne de l'élève dans une compétence de la sous-matière. Clique sur un en-tête pour classer les élèves : ▲ = les plus en difficulté en premier. Pour voir les évaluations d'une compétence, choisis-la dans la liste ci-dessus.</p>`;
 }
 /* Tris : clic sur un en-tête = ordre croissant/décroissant, 3e clic = ordre alphabétique d'origine */
 let sorts = {};
@@ -405,6 +420,7 @@ function viewHome() {
 }
 let lastPage = "";
 function go(p) {
+  mdl = null;
   if (p === "journal") jmode = "read"; if (p === "prog") { ptab = "per"; pfSt = "all"; goPerDefault(); } if (p === "todo") tdShut = {}; if (p === "appel") { apDate = today(); apFilter = "all"; apView = "day"; } if (p === "fiches") fmode = "read"; if (p === "vie" || p === "matos") delete cview[p];   // affichages par défaut à l'arrivée
   if (p === "home") lastPage = page; page = p; try { localStorage.setItem(LS_PAGE, p); } catch (e) {} render(); window.scrollTo(0, 0); if (p === "journal") jScrollNow(); }
 function jScrollNow() { const r = document.querySelector("#main tr.jnow"); if (r) window.scrollTo({ top: Math.max(0, window.scrollY + r.getBoundingClientRect().top - 90), behavior: "instant" }); }   // ouvre le cahier journal en face du créneau en cours
@@ -1006,10 +1022,8 @@ function viewFiches() {
   if (fmode === "read") return head + `<div class="card">${picker}${S.fields.map(f => { const v = infoOf(sid, f.id), vv = v ? (f.type === "tel" ? `<a href="tel:${esc(v.replace(/\s+/g, ""))}">${esc(v)}</a>` : f.type === "email" ? `<a href="mailto:${esc(v)}">${esc(v)}</a>` : esc(v)) : '<span class="muted">—</span>'; return `<div id="fr-${f.id}" data-fgo="${f.id}" title="Cliquer pour modifier" style="padding:8px 4px;border-bottom:1px solid var(--bd,#e3e6ee);cursor:pointer"><div class="muted" style="font-size:.85rem">${esc(f.name)}</div><div style="font-weight:600;white-space:pre-wrap">${vv}</div></div>`; }).join("")}</div>`;
   return head + `<div class="card"><div class="row" style="margin-bottom:12px"><button class="btn" data-nav="fiche|-1">◀</button>
     <select data-selfiche class="sp" style="font-size:1.1rem;font-weight:700;padding:10px">${sorted.map(s => `<option value="${s.id}" ${s.id === sid ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select><button class="btn" data-nav="fiche|1">▶</button></div>
-    ${S.fields.map((f, i) => `<div id="fe-${f.id}" style="margin-bottom:14px"><div class="row" style="margin-bottom:4px"><b class="sp">${esc(f.name)}</b>
-      <button class="btn sm" data-fmove="${f.id}|-1" title="Monter" ${i === 0 ? "disabled" : ""}>▲</button><button class="btn sm" data-fmove="${f.id}|1" title="Descendre" ${i === S.fields.length - 1 ? "disabled" : ""}>▼</button>
-      <button class="chip ${f.inAn ? "on" : ""}" data-fan="${f.id}" title="Afficher ce champ en bas de la fiche d'analyse (écran et PDF)" style="padding:5px 12px">${f.inAn ? "✓ Dans l'analyse" : "Hors analyse"}</button></div>${ficheInput(sid, f)}</div>`).join("")}
-    <p class="muted">▲ ▼ changent l'ordre des champs · « Dans l'analyse » ajoute le champ (s'il est rempli) en bas de la fiche d'analyse de l'élève.</p></div>`;
+    ${S.fields.map(f => `<div id="fe-${f.id}" style="margin-bottom:14px"><div class="row" style="margin-bottom:4px"><b class="sp">${esc(f.name)}</b></div>${ficheInput(sid, f)}</div>`).join("")}
+    <p class="muted">L'ordre des champs et leur présence dans l'analyse se règlent dans ⚙️ Paramètres › Fiches élèves.</p></div>`;
 }
 const emptyStudents = () => `<div class="card"><h2>Bienvenue 👋</h2><p class="muted">Commence par ajouter tes élèves dans ⚙️ Paramètres. La même liste sert partout : compteurs, notes et analyses.</p><p style="margin-top:10px"><button class="btn pri" data-go="set">Ajouter mes élèves</button></p></div>`;
 
@@ -1158,8 +1172,8 @@ const BC = { g: "#3d8f5f", o: "#c9822a", r: "#c0392b", "": "#aab" };
 function barSvg(pct, tick, lv, h) {
   return `<svg class="bsvg" viewBox="0 0 100 8" preserveAspectRatio="none" width="100%" height="${h || 9}" aria-hidden="true"><rect x="0" y="0" width="100" height="8" rx="2.5" fill="#e3e6ef"/>${pct > 0 ? `<rect x="0" y="0" width="${Math.max(3, Math.min(100, pct))}" height="8" rx="2.5" fill="${BC[lv]}"/>` : ""}${tick === null ? "" : `<rect x="${Math.max(0, Math.min(98.6, tick - 0.7))}" y="-1" width="1.4" height="10" fill="#333"/>`}</svg>`;
 }
-function bRow(label, v, c, sub, auto) {
-  return `<div class="brow ${sub ? "bsub" : ""}"><span class="bl">${esc(label)}${auto ? ' <small>🤖</small>' : ""}</span><span class="bbar2">${barSvg(v === null ? 0 : v * 10, c === null ? null : c * 10, lvl(v), 9)}</span>${pl2(v)}<span class="bc">classe ${c === null ? "–" : fmt(c)}</span></div>`;
+function bRow(label, v, c, sub, auto, mk) {
+  return `<div class="brow ${sub ? "bsub" : ""} ${mk ? "bclick" : ""}" ${mk ? `data-mdl="${mk}" title="Cliquer pour voir le détail"` : ""}><span class="bl">${esc(label)}${auto ? ' <small>🤖</small>' : ""}</span><span class="bbar2">${barSvg(v === null ? 0 : v * 10, c === null ? null : c * 10, lvl(v), 9)}</span>${pl2(v)}<span class="bc">classe ${c === null ? "–" : fmt(c)}</span></div>`;
 }
 function bilanUnits(sid) {   // sous-matières (Français, Maths, EMC) ou matière seule
   const E = allEvals(), u = [];
@@ -1188,10 +1202,10 @@ function bilanEleve(sid) {
   const cards = [];
   S.subjects.filter(sj => isDetail(sj.name) && E.some(e => e.subjectId === sj.id)).forEach(sj => {
     const f = e => e.subjectId === sj.id;
-    cards.push(`<div class="bcard"><div class="bch"><b>${esc(sj.name)}</b><span>${pl2(avgOf(sid, f))} <small>classe ${fmt(classAvg(f) ?? 0)}</small></span></div>${sj.subs.map(sb => { const q = e => e.subjectId === sj.id && e.subId === sb.id; return E.some(q) ? bRow(sb.name, avgOf(sid, q), classAvg(q), true, E.some(e => q(e) && e.auto)) : ""; }).join("")}</div>`);
+    cards.push(`<div class="bcard"><div class="bch bclick" data-mdl="subj|${sj.id}" title="Cliquer pour voir le détail"><b>${esc(sj.name)}</b><span>${pl2(avgOf(sid, f))} <small>classe ${fmt(classAvg(f) ?? 0)}</small></span></div>${sj.subs.map(sb => { const q = e => e.subjectId === sj.id && e.subId === sb.id; return E.some(q) ? bRow(sb.name, avgOf(sid, q), classAvg(q), true, E.some(e => q(e) && e.auto), "sub|" + sj.id + "|" + sb.id) : ""; }).join("")}</div>`);
   });
   const others = S.subjects.filter(sj => !isDetail(sj.name) && E.some(e => e.subjectId === sj.id));
-  if (others.length) cards.push(`<div class="bcard ${others.length > 4 ? "bspan2" : ""}"><div class="bch"><b>Autres matières</b></div><div class="bcols">${others.map(sj => { const f = e => e.subjectId === sj.id; return bRow(sj.name, avgOf(sid, f), classAvg(f), true); }).join("")}</div></div>`);
+  if (others.length) cards.push(`<div class="bcard ${others.length > 4 ? "bspan2" : ""}"><div class="bch"><b>Autres matières</b></div><div class="bcols">${others.map(sj => { const f = e => e.subjectId === sj.id; return bRow(sj.name, avgOf(sid, f), classAvg(f), true, false, "subj|" + sj.id); }).join("")}</div></div>`);
   const T = modTotals(sid), box = (title, key, ico2) => {
     const L = key === "matos" ? S.items.matos.map(it => ({ name: it.name, v: tot(sid, "matos", it.id), c: mean(counted().map(x => tot(x.id, "matos", it.id))) })) : T[key];
     if (!L.length) return "";
@@ -1199,7 +1213,7 @@ function bilanEleve(sid) {
     const mine = L.reduce((a, x) => a + x.v, 0), cm = mean(totals) || 0, mx = Math.max(1, mine, ...totals);
     const lv = cm === 0 ? (mine === 0 ? "g" : "r") : mine <= cm ? "g" : mine <= cm * 1.5 ? "o" : "r";   // moins = mieux
     const cur = `<div class="bcur2" title="L'élève par rapport à la moyenne de la classe (repère noir)">${barSvg(mine / mx * 100, cm / mx * 100, lv, 10)}</div>`;
-    return `<div class="bbox bcnt"><h5 class="bclick" data-bdet="${key}" title="Cliquer pour voir le détail"><span>${ico2} ${title}</span><span class="bhint">▾ détail</span><span class="bn">${mine}</span></h5>${[...L].filter(x => x.v > 0).sort((a, b) => b.v - a.v).slice(0, 4).map(x => `<div class="burow"><span>${esc(x.name)}</span><b>${x.v}</b></div>`).join("") || '<div class="bmuted">Rien à signaler</div>'}${cur}<div class="bmuted" style="margin-top:3px">Moyenne de la classe : ${fmt(cm)}</div>${key === "ecriture" && mirOf(sid) ? `<div class="bmuted" style="margin-top:2px;font-size:.78em">🪞 Miroir : ${esc(mirOf(sid))}</div>` : ""}</div>`;
+    return `<div class="bbox bcnt"><h5 class="bclick" data-mdl="cnt|${key}" title="Cliquer pour voir le détail"><span>${ico2} ${title}</span><span class="bhint">▾ détail</span><span class="bn">${mine}</span></h5>${[...L].filter(x => x.v > 0).sort((a, b) => b.v - a.v).slice(0, 4).map(x => `<div class="burow"><span>${esc(x.name)}</span><b>${x.v}</b></div>`).join("") || '<div class="bmuted">Rien à signaler</div>'}${cur}<div class="bmuted" style="margin-top:3px">Moyenne de la classe : ${fmt(cm)}</div>${key === "ecriture" && mirOf(sid) ? `<div class="bmuted" style="margin-top:2px;font-size:.78em">🪞 Miroir : ${esc(mirOf(sid))}</div>` : ""}</div>`;
   };
   const counters = box("Sons", "sons", "🔊") + box("Écriture", "ecriture", "✍️") + box("Matériel prêté", "matos", "📦") + box("Vie de classe", "vie", "🙂");
   return `<div class="bil"><div class="bhead"><h1>${esc(s.name)}</h1><span>Bilan de l'élève · ${date}</span></div>${s.excl ? `<div class="bmuted" style="margin:-6px 0 10px">ℹ️ Cet élève n'est pas compté dans les moyennes de la classe.</div>` : ""}${hero}
@@ -1208,33 +1222,50 @@ function bilanEleve(sid) {
     ${fichBlock(sid)}
     <div class="bfoot">Notes ramenées sur 10 · vert : acquis (7,5 et plus) · orange : en cours d'acquisition (5 à 7,5) · rouge : à renforcer (moins de 5) · repère noir : moyenne de la classe.<br>🤖 = note automatique calculée à partir des compteurs (relative à la classe).</div></div>`;
 }
-function detailTree(sid) {
-  const E = allEvals().filter(e => typeof e.grades[sid] === "number");
-  const evRow = e => { const sj = subj(e.subjectId), sb = subOf(sj, e.subId), cp = compOf(sb, e.compId), v = on10(e.grades[sid], e.max), c = mean(counted().map(s => on10(e.grades[s.id], e.max)));
-    return `<div class="dev"><span class="dd">${frDate(e.date)}</span><span class="dn">${esc(e.label || "(sans intitulé)")}${badges(e)}${cp ? ` <small>· ${esc(cp.name)}</small>` : ""}${e.auto ? ' <small>🤖</small>' : ""}</span><span class="dm">${e.grades[sid]} / ${e.max}</span>${pl2(v)}<span class="bc">classe ${c === null ? "–" : fmt(c)}</span></div>`; };
-  const sum = (label, f, cls2) => `<summary class="${cls2 || ""}"><span class="sl">${esc(label)}</span>${pl2(avgOf(sid, f))}<span class="bc">classe ${fmt(classAvg(f) ?? 0)}</span></summary>`;
-  const h = S.subjects.filter(sj => E.some(e => e.subjectId === sj.id)).map(sj => {
-    const all = E.filter(e => e.subjectId === sj.id), direct = all.filter(e => !sj.subs.some(b => b.id === e.subId));
-    const subs = sj.subs.filter(sb => all.some(e => e.subId === sb.id)).map(sb => `<details class="dt dsub">${sum(sb.name, e => e.subjectId === sj.id && e.subId === sb.id)}${all.filter(e => e.subId === sb.id).sort((a, b) => b.date.localeCompare(a.date)).map(evRow).join("")}</details>`).join("");
-    return `<details class="dt">${sum(sj.name, e => e.subjectId === sj.id, "ds")}${subs}${direct.sort((a, b) => b.date.localeCompare(a.date)).map(evRow).join("")}</details>`;
-  }).join("");
-  return h ? `<div class="card"><h3>📂 Détail par matière <span class="muted">— clique pour dérouler les sous-matières et les évaluations</span></h3>${h}</div>` : "";
+let mdl = null;   // fenêtre flottante de détail (Analyses › élève) : "cnt|mod", "sub|matière|sous-matière" ou "subj|matière"
+function evRowOf(sid, e) {
+  const sj = subj(e.subjectId), sb = subOf(sj, e.subId), cp = compOf(sb, e.compId), v = on10(e.grades[sid], e.max), c = mean(counted().map(s => on10(e.grades[s.id], e.max)));
+  return `<div class="dev" style="padding-left:4px"><span class="dd">${frDate(e.date)}</span><span class="dn">${esc(e.label || "(sans intitulé)")}${badges(e)}${cp ? ` <small>· ${esc(cp.name)}</small>` : ""}${e.auto ? ' <small>🤖</small>' : ""}</span><span class="dm">${e.grades[sid]} / ${e.max}</span>${pl2(v)}<span class="bc">classe ${c === null ? "–" : fmt(c)}</span></div>`;
 }
-function counterDetails(sid) {
-  const T = modTotals(sid), name = { sons: "🔊 Sons", ecriture: "✍️ Écriture", vie: "🙂 Vie de classe", matos: "📦 Matériel prêté" }, unit = { sons: "ratés", ecriture: "relevés", vie: "relevés", matos: "prêts" };
-  return ["sons", "ecriture", "vie", "matos"].filter(m => bdet[sid + "|" + m]).map(m => {
-    const L = m === "matos" ? S.items.matos.map(it => ({ name: it.name, v: tot(sid, "matos", it.id), c: mean(counted().map(x => tot(x.id, "matos", it.id))) })) : T[m];
-    const colr = x => x.c !== null && x.v > x.c * 1.5 ? "r" : x.c !== null && x.v > x.c ? "o" : "g", rk = { r: 0, o: 1, g: 2 };
-    const hit = L.filter(x => x.v > 0).sort((a, b) => rk[colr(a)] - rk[colr(b)] || b.v - a.v), none = L.length - hit.length, total = hit.reduce((a, x) => a + x.v, 0);
-    return `<div class="card"><div class="row"><h3 class="sp" style="margin:0">${name[m]} — détail de ${esc(stud(sid).name)}</h3><button class="btn sm" data-bdet="${m}">✕ Fermer</button></div>
-      <p class="muted" style="margin:6px 0">${hit.length ? `${total} ${unit[m]} sur ${hit.length} ligne${hit.length > 1 ? "s" : ""}, classées par couleur selon l'écart avec la moyenne de la classe : 🔴 rouges d'abord (bien au-dessus), puis 🟠 oranges, puis 🟢 vertes ; à couleur égale, du plus fréquent au moins fréquent (cumul du trimestre). « classe » = moyenne des élèves comptés.` : "Rien à signaler pour cet élève."}</p>
-      ${hit.map(x => `<div class="dev" style="padding-left:4px"><span class="dn"><b>${esc(x.name)}</b></span><span class="bp ${colr(x)}">×${x.v}</span><span class="bc">classe ${x.c === null ? "–" : fmt(x.c)}</span></div>`).join("")}
-      ${m === "ecriture" ? `<div class="dev" style="padding-left:4px"><span class="dn"><b>🪞 Écrits en miroir</b></span><span class="bc" style="font-size:1.05em">${mirOf(sid) ? esc(mirOf(sid)) : "rien de noté"}</span></div>` : ""}
-      ${none > 0 && hit.length ? `<p class="muted" style="margin-top:6px">${none} autre${none > 1 ? "s" : ""} ligne${none > 1 ? "s" : ""} sans rien à signaler.</p>` : ""}</div>`;
-  }).join("");
+function mdlSum(sid, label, f, cls2) { return `<summary class="${cls2 || ""}"><span class="sl">${esc(label)}</span>${pl2(avgOf(sid, f))}<span class="bc">classe ${fmt(classAvg(f) ?? 0)}</span></summary>`; }
+function mdlCounter(sid, m) {
+  const T = modTotals(sid), unit = { sons: "ratés", ecriture: "relevés", vie: "relevés", matos: "prêts" };
+  const L = m === "matos" ? S.items.matos.map(it => ({ name: it.name, v: tot(sid, "matos", it.id), c: mean(counted().map(x => tot(x.id, "matos", it.id))) })) : T[m];
+  const colr = x => x.c !== null && x.v > x.c * 1.5 ? "r" : x.c !== null && x.v > x.c ? "o" : "g", rk = { r: 0, o: 1, g: 2 };
+  const hit = L.filter(x => x.v > 0).sort((a, b) => rk[colr(a)] - rk[colr(b)] || b.v - a.v), none = L.length - hit.length, total = hit.reduce((a, x) => a + x.v, 0);
+  return `<p class="muted" style="margin:0 0 6px">${hit.length ? `${total} ${unit[m]} sur ${hit.length} ligne${hit.length > 1 ? "s" : ""}, classées par couleur : 🔴 bien au-dessus de la moyenne de la classe, 🟠 au-dessus, 🟢 dans la moyenne ; à couleur égale, du plus fréquent au moins fréquent (cumul du trimestre).` : "Rien à signaler pour cet élève."}</p>`
+    + hit.map(x => `<div class="dev" style="padding-left:4px"><span class="dn"><b>${esc(x.name)}</b></span><span class="bp ${colr(x)}">×${x.v}</span><span class="bc">classe ${x.c === null ? "–" : fmt(x.c)}</span></div>`).join("")
+    + (m === "ecriture" ? `<div class="dev" style="padding-left:4px"><span class="dn"><b>🪞 Écrits en miroir</b></span><span class="bc" style="font-size:1.05em">${mirOf(sid) ? esc(mirOf(sid)) : "rien de noté"}</span></div>` : "")
+    + (none > 0 && hit.length ? `<p class="muted" style="margin-top:6px">${none} autre${none > 1 ? "s" : ""} ligne${none > 1 ? "s" : ""} sans rien à signaler.</p>` : "");
+}
+function mdlHtml(sid) {
+  if (!mdl || !stud(sid)) return "";
+  const [t, a, b] = mdl.split("|"), E = allEvals().filter(e => typeof e.grades[sid] === "number"), byDate = (x, y) => y.date.localeCompare(x.date);
+  const name = { sons: "🔊 Sons", ecriture: "✍️ Écriture", vie: "🙂 Vie de classe", matos: "📦 Matériel prêté" };
+  let title = "", body = "";
+  if (t === "cnt") { title = name[a] || ""; body = mdlCounter(sid, a); }
+  else {
+    const sj = subj(a); if (!sj) return "";
+    if (t === "sub") {
+      const sb = sj.subs.find(x => x.id === b); if (!sb) return "";
+      const f = e => e.subjectId === sj.id && e.subId === sb.id, all = E.filter(f);
+      title = `${sj.name} › ${sb.name}`;
+      const comps = (sb.comps || []).filter(c => all.some(e => e.compId === c.id)), rest = all.filter(e => !(sb.comps || []).some(c => c.id === e.compId));
+      body = `<details class="dt" open>${mdlSum(sid, "Moyenne de la sous-matière", f, "ds")}</details>`
+        + comps.map(c => `<details class="dt" open>${mdlSum(sid, c.name, e => f(e) && e.compId === c.id)}${all.filter(e => e.compId === c.id).sort(byDate).map(e => evRowOf(sid, e)).join("")}</details>`).join("")
+        + (rest.length ? `<details class="dt" open>${mdlSum(sid, "Sans compétence", e => f(e) && !(sb.comps || []).some(c => c.id === e.compId))}${rest.sort(byDate).map(e => evRowOf(sid, e)).join("")}</details>` : "");
+    } else {
+      const all = E.filter(e => e.subjectId === sj.id), direct = all.filter(e => !sj.subs.some(x => x.id === e.subId));
+      title = sj.name;
+      body = `<details class="dt" open>${mdlSum(sid, "Moyenne de la matière", e => e.subjectId === sj.id, "ds")}</details>`
+        + sj.subs.filter(sb => all.some(e => e.subId === sb.id)).map(sb => `<details class="dt dsub">${mdlSum(sid, sb.name, e => e.subjectId === sj.id && e.subId === sb.id)}${all.filter(e => e.subId === sb.id).sort(byDate).map(e => evRowOf(sid, e)).join("")}</details>`).join("")
+        + direct.sort(byDate).map(e => evRowOf(sid, e)).join("");
+    }
+  }
+  return `<div class="mdlbg" data-mdl=""></div><div class="mdlbox" role="dialog"><div class="row" style="margin-bottom:8px"><h3 class="sp" style="margin:0">${title} <span class="muted">— ${esc(stud(sid).name)}</span></h3><button class="btn sm" data-mdl="" title="Fermer (Échap)">✕ Fermer</button></div>${body || '<p class="muted">Rien à afficher.</p>'}</div>`;
 }
 function studentHtml(sid) {
-  return `<div class="card">${bilanEleve(sid)}</div>${counterDetails(sid)}${detailTree(sid)}<div class="card"><h3>Synthèse écrite</h3><ul class="synth">${synth(sid).map(x => `<li>${x}</li>`).join("")}</ul>${autoWarn.length ? autoNote() : ""}</div>`;
+  return `<div class="card">${bilanEleve(sid)}</div><div class="card"><h3>Synthèse écrite</h3><ul class="synth">${synth(sid).map(x => `<li>${x}</li>`).join("")}</ul>${autoWarn.length ? autoNote() : ""}</div>${mdlHtml(sid)}`;
 }
 function classHtml() {
   const sorted = [...S.students].sort(byName);
@@ -1246,7 +1277,7 @@ function classHtml() {
   const csorted = sortRows(sorted, "cnt", (s, k) => k === "__n" ? s.name : S.items[k].reduce((a, it) => a + tot(s.id, k, it.id), 0));
   const cc = cnt3.length ? `<div class="scroll"><table><thead><tr>${sth("cnt", "__n", "t", "Élève")}${cnt3.map(m => sth("cnt", m, "n", MODS[m])).join("")}</tr></thead><tbody>${csorted.map(s => `<tr><td>${nm(s)}</td>${cnt3.map(m => `<td>${S.items[m].reduce((a, it) => a + tot(s.id, m, it.id), 0)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<p class="muted">Aucun compteur.</p>`;
   const lent = Object.keys(S.lent).filter(k => S.lent[k]).map(k => { const [sid, iid] = k.split("::"); const st = stud(sid), it = S.items.matos.find(i => i.id === iid); return st && it ? `${esc(st.name)} : ${esc(it.name)}` : null; }).filter(Boolean);
-  return `<div class="card"><div class="row"><h2 class="sp" style="margin:0">Notes de la classe</h2>${hasComps && !classOne ? `<button class="chip ${classComps ? "on" : ""}" data-act="classComps">↳ Détail par compétence</button>` : ""}</div><p class="muted" style="margin:4px 0 8px">Moyennes sur 10 par matière, sous-matière (Français, Mathématiques, EMC) et élève. Les élèves « hors moyenne » ne comptent pas dans la ligne Classe.</p>${notes}${autoNote()}</div><div class="card"><h2>Compteurs (cumul du trimestre)</h2>${cc}</div>${lent.length ? `<div class="card"><h3>📦 Matériel actuellement prêté</h3><p>${lent.join(" · ")}</p></div>` : ""}`;
+  return `<div class="card"><div class="row"><h2 class="sp" style="margin:0">Notes de la classe</h2></div><p class="muted" style="margin:4px 0 8px">Moyennes sur 10 par matière, sous-matière (Français, Mathématiques, EMC) et élève. Les élèves « hors moyenne » ne comptent pas dans la ligne Classe.</p>${notes}${autoNote()}</div><div class="card"><h2>Compteurs (cumul du trimestre)</h2>${cc}</div>${lent.length ? `<div class="card"><h3>📦 Matériel actuellement prêté</h3><p>${lent.join(" · ")}</p></div>` : ""}`;
 }
 
 /* Impression : une seule page A4 */
@@ -1318,8 +1349,8 @@ function viewSettings() {
   const st = cfgStatus();
   return `<div class="card"><h2>👥 Élèves (${S.students.length})</h2>${studs}<p class="muted">« Hors moyenne » : l'élève garde ses notes et son bilan, mais n'entre pas dans les moyennes ni les repères de la classe.</p>${addRow("student", "Prénom (ou Prénom Nom)")}
       <details><summary>Ajouter plusieurs élèves d'un coup</summary><textarea id="bulk" placeholder="Un élève par ligne"></textarea><button class="btn sm pri" data-add="bulk">Ajouter la liste</button></details></div>
-    <div class="card"><h2>👤 Fiches élèves — champs</h2><p class="muted">Les champs qui apparaissent sur la page 👤 Fiches. Ajoute ou renomme ce que tu veux (téléphone, e-mail, suivi extérieur…).</p>
-      ${S.fields.map(f => `<div class="row" style="padding:3px 0"><input type="text" value="${esc(f.name)}" data-fname="${f.id}" class="sp"><button class="btn sm" data-fmove="${f.id}|-1">▲</button><button class="btn sm" data-fmove="${f.id}|1">▼</button><select data-ftype="${f.id}"><option value="text" ${f.type === "text" ? "selected" : ""}>Texte court</option><option value="long" ${f.type === "long" ? "selected" : ""}>Texte long</option><option value="tel" ${f.type === "tel" ? "selected" : ""}>Téléphone</option><option value="email" ${f.type === "email" ? "selected" : ""}>E-mail</option></select><button class="btn sm dan" data-dfield="${f.id}">✕</button></div>`).join("")}
+    <div class="card"><h2>👤 Fiches élèves — champs</h2><p class="muted">Les champs qui apparaissent sur la page 👤 Fiches. Ajoute ou renomme ce que tu veux (téléphone, e-mail, suivi extérieur…). ▲ ▼ changent l'ordre ; « Analyse » ajoute le champ (s'il est rempli) en bas de la fiche d'analyse de l'élève.</p>
+      ${S.fields.map(f => `<div class="row" style="padding:3px 0"><input type="text" value="${esc(f.name)}" data-fname="${f.id}" class="sp"><button class="btn sm" data-fmove="${f.id}|-1">▲</button><button class="btn sm" data-fmove="${f.id}|1">▼</button><button class="chip ${f.inAn ? "on" : ""}" data-fan="${f.id}" title="Afficher ce champ (s'il est rempli) en bas de la fiche d'analyse de l'élève, écran et PDF" style="padding:5px 10px;white-space:nowrap">${f.inAn ? "✓ Analyse" : "Hors analyse"}</button><select data-ftype="${f.id}"><option value="text" ${f.type === "text" ? "selected" : ""}>Texte court</option><option value="long" ${f.type === "long" ? "selected" : ""}>Texte long</option><option value="tel" ${f.type === "tel" ? "selected" : ""}>Téléphone</option><option value="email" ${f.type === "email" ? "selected" : ""}>E-mail</option></select><button class="btn sm dan" data-dfield="${f.id}">✕</button></div>`).join("")}
       <div class="row" style="margin-top:6px"><input type="text" id="add-field" placeholder="Nouveau champ" class="sp"><select id="add-ftype"><option value="text">Texte court</option><option value="long">Texte long</option><option value="tel">Téléphone</option><option value="email">E-mail</option></select><button class="btn sm pri" data-add="field">Ajouter</button></div></div>
     <div class="card"><h2>🔢 Compteurs</h2>
       <h3>🙂 Vie de classe</h3><p class="muted">Pour la note EMC automatique : choisis, pour chaque ligne, « consignes » ou « règles de vie », et un poids (une ligne plus grave peut compter 2 ou 3).</p>${itemList("vie")}${addRow("vie", "Nouvelle ligne de vie de classe")}
@@ -1593,7 +1624,7 @@ const actions = {
 
 /* ---------- Événements ---------- */
 document.addEventListener("click", ev => {
-  const t = ev.target.closest("[data-go],[data-cat],[data-cv],[data-nav],[data-dec2],[data-decm2],[data-inc],[data-dec],[data-decm],[data-lend],[data-lend2],[data-inc2],[data-tbl],[data-nt],[data-edit],[data-deval],[data-an],[data-act],[data-ds],[data-di],[data-dsj],[data-dsb],[data-add],[data-addsb],[data-addcp],[data-dcp],[data-dfield],[data-bdet],[data-fab3],[data-ap],[data-apn],[data-apf],[data-apv],[data-tdim],[data-fmove],[data-fgo],[data-fan],[data-sort],[data-ptab],[data-ptog],[data-pmv],[data-pdel],[data-padd],[data-pab],[data-pev],[data-plink],[data-pall],[data-eexcl],[data-psv],[data-jadd],[data-jmv],[data-jdel],[data-jlink],[data-jldel],[data-jnav],[data-jday],[data-jsort],[data-sday],[data-jmode],[data-jcopy],[data-cmv],[data-cday],[data-cedit],[data-cdel],[data-cadd],[data-ccancel],[data-cimpdel],[data-pgo],[data-jgo],[data-fab2],[data-jcol],[data-jtcol],[data-top],[data-gofiche],[data-tdadd],[data-tdfold],[data-tddel],[data-tdmv],[data-tdnewbtn],[data-tdchk],[data-tdx],[data-tdclear],[data-tdsd],[data-tdst],[data-tdall],[data-tdmiss]");
+  const t = ev.target.closest("[data-go],[data-cat],[data-cv],[data-nav],[data-mdl],[data-dec2],[data-decm2],[data-inc],[data-dec],[data-decm],[data-lend],[data-lend2],[data-inc2],[data-tbl],[data-nt],[data-edit],[data-deval],[data-an],[data-act],[data-ds],[data-di],[data-dsj],[data-dsb],[data-add],[data-addsb],[data-addcp],[data-dcp],[data-dfield],[data-bdet],[data-fab3],[data-ap],[data-apn],[data-apf],[data-apv],[data-tdim],[data-fmove],[data-fgo],[data-fan],[data-sort],[data-ptab],[data-ptog],[data-pmv],[data-pdel],[data-padd],[data-pab],[data-pev],[data-plink],[data-pall],[data-eexcl],[data-psv],[data-jadd],[data-jmv],[data-jdel],[data-jlink],[data-jldel],[data-jnav],[data-jday],[data-jsort],[data-sday],[data-jmode],[data-jcopy],[data-cmv],[data-cday],[data-cedit],[data-cdel],[data-cadd],[data-ccancel],[data-cimpdel],[data-pgo],[data-jgo],[data-fab2],[data-jcol],[data-jtcol],[data-top],[data-gofiche],[data-tdadd],[data-tdfold],[data-tddel],[data-tdmv],[data-tdnewbtn],[data-tdchk],[data-tdx],[data-tdclear],[data-tdsd],[data-tdst],[data-tdall],[data-tdmiss]");
   if (!t) return; const d = t.dataset;
   if (d.go) return go(d.go);
   if (d.cv) { cview[skey(page)] = d.cv; return render(); }
@@ -1607,7 +1638,7 @@ document.addEventListener("click", ev => {
   if (d.lend) { const k = sel.matos + "::" + d.lend; if (S.lent[k]) delete S.lent[k]; else { S.lent[k] = true; bump(sel.matos, "matos", d.lend, 1); } save(); return render(); }
   if (d.lend2) { const [s, it] = d.lend2.split("|"), k = s + "::" + it; if (S.lent[k]) delete S.lent[k]; else { S.lent[k] = true; bump(s, "matos", it, 1); } save(); return render(); }
   if (d.nt) { ntab = d.nt; return render(); }
-  if (d.an) { anSel = d.an; return render(); }
+  if (d.an) { anSel = d.an; mdl = null; return render(); }
   if (d.edit) { const e = S.evals.find(x => x.id === d.edit); if (e) { draft = { subjectId: e.subjectId, subId: e.subId, compId: e.compId || "", per: e.per || "", label: e.label, date: e.date, max: e.max, coef: e.coef ?? 1, excl: !!e.excl, grades: { ...e.grades }, editId: e.id }; saveDraft(); ntab = "saisie"; render(); } return; }
   if (d.deval) { if (confirm("Supprimer cette évaluation ?")) { S.evals = S.evals.filter(x => x.id !== d.deval); save(); render(); } return; }
   if (d.act) return actions[d.act](t);
@@ -1729,7 +1760,7 @@ document.addEventListener("click", ev => {
   if (d.sort) { const [id, k, ty] = d.sort.split("|"), s = sorts[id]; if (!s || s.k !== k) sorts[id] = { k, d: ty === "n" ? "desc" : "asc" }; else if ((ty === "n" && s.d === "desc") || (ty !== "n" && s.d === "asc")) sorts[id].d = ty === "n" ? "asc" : "desc"; else delete sorts[id]; return render(); }
   if (d.fmove) { const [id, k] = d.fmove.split("|"), i = S.fields.findIndex(f => f.id === id), j = i + (+k); if (i < 0 || j < 0 || j >= S.fields.length) return; [S.fields[i], S.fields[j]] = [S.fields[j], S.fields[i]]; save(); return render(); }
   if (d.fan) { const f = S.fields.find(x => x.id === d.fan); f.inAn = !f.inAn; save(); return render(); }
-  if (d.bdet) { const k = anSel + "|" + d.bdet; bdet[k] = !bdet[k]; return render(); }
+  if (d.mdl !== undefined) { mdl = d.mdl || null; return render(); }
   if (d.dfield) { const f = S.fields.find(x => x.id === d.dfield); if (!confirm(`Supprimer le champ « ${f.name} » ? Les informations déjà saisies dans ce champ seront perdues.`)) return; S.fields = S.fields.filter(x => x.id !== d.dfield); Object.values(S.info).forEach(o => delete o[d.dfield]); save(); return render(); }
   if (d.add) {
     if (d.add === "field") { const v = $("#add-field").value.trim(); if (!v) return; S.fields.push({ id: uid(), name: v, type: $("#add-ftype").value }); save(); return render(); }
@@ -1819,7 +1850,7 @@ document.addEventListener("input", ev => {
 });
 
 setInterval(() => { if (!document.hidden && page === "journal" && jmode === "read" && jNowId(jdate) !== jLastNow) render(); }, 30000);   // la surbrillance suit l'heure
-document.addEventListener("keydown", ev => { if (ev.key === "Enter" && ev.target.dataset && ev.target.dataset.tdnew) { ev.preventDefault(); const b = document.querySelector(`[data-tdnewbtn="${ev.target.dataset.tdnew}"]`); b && b.click(); } });
+document.addEventListener("keydown", ev => { if (ev.key === "Escape" && mdl) { mdl = null; render(); return; } if (ev.key === "Enter" && ev.target.dataset && ev.target.dataset.tdnew) { ev.preventDefault(); const b = document.querySelector(`[data-tdnewbtn="${ev.target.dataset.tdnew}"]`); b && b.click(); } });
 render(); updDraftMean();
 if (lockedNow()) showLock(); else if (cloudOn()) pull(false);
 </script>
