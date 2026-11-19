@@ -489,13 +489,13 @@ function viewCounters(p) {
   if (view === "eleve") h += `<div class="card"><div class="row"><button class="btn" data-nav="${key}|-1">◀</button>
       <select data-selst="${key}" class="sp" style="font-size:1.1rem;font-weight:700;padding:10px">${sorted.map(s => `<option value="${s.id}" ${s.id === sid ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select>
       <button class="btn" data-nav="${key}|1">▶</button></div></div>`;
+  if (view === "eleve" && combo && S.items.sons.length) {   // saisie rapide d'un son, tout en haut (au-dessus d'Écriture)   // saisie rapide : choisir un son dans la liste, puis −1 / +1
+    const items = S.items.sons; if (!items.some(i => i.id === qson)) qson = items[0].id;
+    h += `<div class="card" style="padding:8px 10px"><div class="row" style="gap:6px;flex-wrap:nowrap"><select data-qsel class="sp" style="min-width:0;font-weight:700;padding:8px" title="Choisir un son">${items.map(i => `<option value="${i.id}" ${i.id === qson ? "selected" : ""}>${esc(i.name)}</option>`).join("")}</select><button class="btn" data-dec="sons|${qson}" style="min-width:42px">−1</button><b style="min-width:28px;text-align:center;font-size:1.25rem">${tot(sid, "sons", qson)}</b><button class="btn pri" data-inc="sons|${qson}" style="min-width:42px">+1</button></div></div>`;
+  }
   mods.forEach(mod => {
     const items = S.items[mod], titre = combo ? `<h3 style="margin-bottom:10px">${TITLE[mod]}</h3>` : "";
     if (!items.length) { h += `<div class="card">${titre}<p class="muted">Aucune ligne pour « ${TITLE[mod]} ». Ajoute-en dans ⚙️ Paramètres › Compteurs.</p></div>`; return; }
-    if (view === "eleve" && mod === "sons") {   // saisie rapide : choisir un son dans la liste, puis −1 / +1
-      if (!items.some(i => i.id === qson)) qson = items[0].id;
-      h += `<div class="card" style="padding:8px 10px"><div class="row" style="gap:6px;flex-wrap:nowrap"><select data-qsel class="sp" style="min-width:0;font-weight:700;padding:8px" title="Choisir un son">${items.map(i => `<option value="${i.id}" ${i.id === qson ? "selected" : ""}>${esc(i.name)}</option>`).join("")}</select><button class="btn" data-dec="sons|${qson}" style="min-width:42px">−1</button><b style="min-width:28px;text-align:center;font-size:1.25rem">${tot(sid, "sons", qson)}</b><button class="btn pri" data-inc="sons|${qson}" style="min-width:42px">+1</button></div></div>`;
-    }
     if (view === "eleve") { h += `<div class="card">${combo ? titre : ""}<div class="tiles">${counterTiles(mod, "eleve", sid)}</div>${mod === "ecriture" ? mirField(sid) : ""}</div>`; return; }
     if (!items.some(i => i.id === citem[mod])) citem[mod] = items[0].id;
     const it = items.find(i => i.id === citem[mod]);
