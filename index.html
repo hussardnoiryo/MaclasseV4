@@ -355,7 +355,29 @@ function columns(withComps) {   // colonnes du bilan : sous-matières (et compé
   });
   return cols;
 }
-let classComps = false, classOne = "";
+let classComps = false, classOne = "", clSj = "", clSb = "", clCp = "";   // choix en cascade : matière › sous-matière › compétence
+function classPicker() {
+  const E = allEvals(), sjs = S.subjects.filter(sj => E.some(e => e.subjectId === sj.id)), sj = sjs.find(x => x.id === clSj);
+  if (!sj) { clSj = clSb = clCp = ""; }
+  const sbs = sj ? sj.subs.filter(sb => E.some(e => e.subjectId === sj.id && e.subId === sb.id)) : [], sb = sbs.find(x => x.id === clSb);
+  if (sj && !sb) { clSb = clCp = ""; }
+  const fSj = e => e.subjectId === sj.id, fSb = e => sj && sb && fSj(e) && e.subId === sb.id;
+  const seen = new Set(), cps = []; if (sb) { (sb.comps || []).forEach(c => { const g = compGrp(c.id); if (seen.has(g)) return; seen.add(g); if (E.some(e => fSb(e) && compGrp(e.compId) === g)) cps.push({ k: g, name: compBase(c.name) || c.name }); }); if (E.some(e => fSb(e) && !(sb.comps || []).some(c => c.id === e.compId))) cps.push({ k: "_sans", name: "Sans compétence" }); }
+  const cp = cps.find(x => x.k === clCp); if (sb && !cp) clCp = "";
+  const opt = (arr, cur, all) => `<option value="">${all}</option>` + arr.map(x => `<option value="${esc(x.id || x.k)}" ${(x.id || x.k) === cur ? "selected" : ""}>${esc(x.name)}</option>`).join("");
+  const sel = (k, arr, cur, all, dis) => `<select data-cl="${k}" style="width:100%" ${dis ? "disabled" : ""}>${opt(arr, cur, all)}</select>`;
+  const html = `<div class="fl" style="margin:0 0 8px"><label>Matière<br>${sel("sj", sjs, clSj, "— toutes les matières —")}</label><label>Sous-matière<br>${sel("sb", sbs, clSb, sj ? (sbs.length ? "— toutes —" : "— aucune —") : "(choisis une matière)", !sj || !sbs.length)}</label><label>Compétence<br>${sel("cp", cps, clCp, sb ? "— toutes —" : "(choisis une sous-matière)", !sb)}</label></div>`;
+  let table;
+  if (sb && cp) { const g = cp.k, f = g === "_sans" ? e => fSb(e) && !(sb.comps || []).some(c => c.id === e.compId) : e => fSb(e) && compGrp(e.compId) === g; table = classOneTable({ label: cp.name, f, comp: true, sj: sj.name, sjId: sj.id }); }
+  else if (sb) table = classSubTable({ label: sb.name, f: fSb, sub: true, sj: sj.name, sjId: sj.id, sbId: sb.id });
+  else if (sj && !sbs.length) table = classOneTable({ label: sj.name, f: fSj, main: true, sj: sj.name, sjId: sj.id });
+  else if (sj) {
+    const cs = sbs.map(b => ({ k: b.id, name: b.name, f: e => fSj(e) && e.subId === b.id })), rest = e => fSj(e) && !sj.subs.some(b => b.id === e.subId);
+    if (E.some(rest)) cs.push({ k: "_sans", name: "Sans sous-matière", f: rest });
+    table = classSubTable({ label: sj.name, f: fSj, sub: true, sj: sj.name, sjId: sj.id }, cs, "Chaque colonne est la moyenne de l'élève dans une sous-matière. Choisis une sous-matière dans la liste pour voir ses compétences.");
+  } else table = classNotesTable(false);
+  return html + table;
+}
 /* Détail d'une seule compétence : une ligne par élève, sa moyenne et chaque évaluation de cette compétence */
 function classOneTable(col) {
   if (col.sub && !col.comp) return classSubTable(col);
@@ -368,17 +390,17 @@ function classOneTable(col) {
   return `<div class="scroll"><table class="ctab"><thead>${head}</thead><tbody>${body}${last}</tbody></table></div><p class="muted" style="margin-top:6px">Clique sur « Moyenne » (ou une évaluation) pour classer les élèves : ▲ = les plus en difficulté en premier.</p>`;
 }
 /* Détail d'une sous-matière : une colonne par compétence (sa moyenne), plus une colonne « Sans compétence » si besoin */
-function classSubTable(col) {
+function classSubTable(col, cs0, note) {
   const sj = subj(col.sjId), sb = (sj ? sj.subs : []).find(b => b.id === col.sbId), E = allEvals().filter(col.f), cl = counted();
-  const seenG = new Set(), cs = []; ((sb && sb.comps) || []).forEach(c => { const g = compGrp(c.id); if (seenG.has(g)) return; seenG.add(g); const o = { k: g, name: compBase(c.name) || c.name, f: e => col.f(e) && compGrp(e.compId) === g }; if (E.some(o.f)) cs.push(o); });
+  const seenG = new Set(), cs = cs0 || []; if (!cs0) { ((sb && sb.comps) || []).forEach(c => { const g = compGrp(c.id); if (seenG.has(g)) return; seenG.add(g); const o = { k: g, name: compBase(c.name) || c.name, f: e => col.f(e) && compGrp(e.compId) === g }; if (E.some(o.f)) cs.push(o); });
   const rest = e => col.f(e) && !((sb && sb.comps) || []).some(c => c.id === e.compId);
-  if (E.some(rest)) cs.push({ k: "_sans", name: "Sans compétence", f: rest });
+  if (E.some(rest)) cs.push({ k: "_sans", name: "Sans compétence", f: rest }); }
   const rows = sortRows([...S.students].sort(byName), "cone", (st, k) => k === "__n" ? st.name : k === "__a" ? avgOf(st.id, col.f) : avgOf(st.id, (cs.find(c => c.k === k) || { f: () => false }).f));
   const pl = v => v === null ? '<span class="muted">–</span>' : `<span class="pill ${cls(v)}" style="min-width:0">${fmt(v)}</span>`;
   const head = `<tr>${sth("cone", "__n", "t", "Élève")}${sth("cone", "__a", "n", "Moyenne", 'class="cmain"')}${cs.map(c => sth("cone", c.k, "n", esc(c.name))).join("")}</tr>`;
   const body = rows.map(st => `<tr><td>${nm(st)}</td><td class="cmain">${pl(avgOf(st.id, col.f))}</td>${cs.map(c => `<td>${pl(avgOf(st.id, c.f))}</td>`).join("")}</tr>`).join("");
   const last = `<tr class="clrow"><td><b>Classe</b></td><td class="cmain">${pl(classAvg(col.f))}</td>${cs.map(c => `<td>${pl(classAvg(c.f))}</td>`).join("")}</tr>`;
-  return `<div class="scroll"><table class="ctab"><thead>${head}</thead><tbody>${body}${last}</tbody></table></div><p class="muted" style="margin-top:6px">Chaque colonne est la moyenne de l'élève dans une compétence de la sous-matière. Clique sur un en-tête pour classer les élèves : ▲ = les plus en difficulté en premier. Pour voir les évaluations d'une compétence, choisis-la dans la liste ci-dessus.</p>`;
+  return `<div class="scroll"><table class="ctab"><thead>${head}</thead><tbody>${body}${last}</tbody></table></div><p class="muted" style="margin-top:6px">${note || "Chaque colonne est la moyenne de l'élève dans une compétence de la sous-matière."} Clique sur un en-tête pour classer les élèves : ▲ = les plus en difficulté en premier. Pour voir les évaluations d'une compétence, choisis-la dans la liste ci-dessus.</p>`;
 }
 /* Tris : clic sur un en-tête = ordre croissant/décroissant, 3e clic = ordre alphabétique d'origine */
 let sorts = {};
@@ -1293,9 +1315,7 @@ function studentHtml(sid) {
 function classHtml() {
   const sorted = [...S.students].sort(byName);
   const hasComps = S.subjects.some(sj => sj.subs.some(sb => (sb.comps || []).length));
-  const all = columns(true).filter(c => !c.auto || c.comp || c.sub || c.main), comps = all, one = comps.find(c => c.label === classOne), grp = (t, l) => l.length ? `<optgroup label="${t}">${l.map(c => `<option value="${esc(c.label)}" ${c.label === classOne ? "selected" : ""}>${esc(c.label)}</option>`).join("")}</optgroup>` : "";
-  const picker = comps.length ? `<div class="row" style="margin:0 0 8px"><label class="sp">🔎 Un seul sous-domaine ou une seule compétence :<br><select data-cone style="width:100%"><option value="">— tableau complet —</option>${grp("Sous-matières", comps.filter(c => c.sub && !c.comp))}${grp("Compétences", comps.filter(c => c.comp))}${grp("Matières entières", comps.filter(c => c.main))}</select></label></div>` : "";
-  const notes = picker + (one ? classOneTable(one) : classNotesTable(false));
+  const notes = S.subjects.length ? classPicker() : classNotesTable(false);
   const cnt3 = ["vie", "sons", "ecriture"].filter(m => S.items[m].length);
   const csorted = sortRows(sorted, "cnt", (s, k) => k === "__n" ? s.name : S.items[k].reduce((a, it) => a + tot(s.id, k, it.id), 0));
   const cc = cnt3.length ? `<div class="scroll"><table><thead><tr>${sth("cnt", "__n", "t", "Élève")}${cnt3.map(m => sth("cnt", m, "n", MODS[m])).join("")}</tr></thead><tbody>${csorted.map(s => `<tr><td>${nm(s)}</td>${cnt3.map(m => `<td>${S.items[m].reduce((a, it) => a + tot(s.id, m, it.id), 0)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<p class="muted">Aucun compteur.</p>`;
@@ -1848,6 +1868,7 @@ document.addEventListener("change", ev => {
   if (d.selit) { citem[d.selit] = t.value; return render(); }
   if (d.d) { draft[d.d] = d.d === "max" ? (+t.value || 10) : d.d === "excl" ? t.checked : t.value; if (d.d === "date") draft.dateManual = true; if (d.d === "subjectId") { draft.subId = ""; draft.compId = ""; } if (d.d === "subId") draft.compId = ""; saveDraft(); if (["subjectId", "subId", "max"].includes(d.d)) render(); return; }
   if (d.g) { const v = t.value.replace(",", "."); if (v === "") delete draft.grades[d.g]; else draft.grades[d.g] = parseFloat(v); saveDraft(); const p = $("#gp-" + d.g); if (p) p.innerHTML = pill(on10(draft.grades[d.g], draft.max)); updDraftMean(); return; }
+  if (d.cl !== undefined) { if (d.cl === "sj") { clSj = t.value; clSb = clCp = ""; } else if (d.cl === "sb") { clSb = t.value; clCp = ""; } else clCp = t.value; if (clSj) sorts.cone = { k: "__a", d: "asc" }; else delete sorts.cone; return render(); }
   if (d.cone !== undefined) { classOne = t.value; if (classOne) sorts.cone = { k: "__a", d: "asc" }; else delete sorts.cone; return render(); }
   if (d.hf !== undefined) { histF = t.value; return render(); }
   if (d.rn) { const s = stud(d.rn), v = t.value.trim(); if (v) { s.name = v; save(); } return render(); }
