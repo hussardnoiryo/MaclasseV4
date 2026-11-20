@@ -1025,6 +1025,11 @@ function ficheInput(sid, f) {
   const link = f.type === "tel" && v ? `<a class="btn sm" href="tel:${esc(v.replace(/\s+/g, ""))}">📞</a>` : f.type === "email" && v ? `<a class="btn sm" href="mailto:${esc(v)}">✉️</a>` : "";
   return `<div class="row"><input type="${f.type === "tel" ? "tel" : f.type === "email" ? "email" : "text"}" ${at} value="${esc(v)}" class="sp">${link}</div>`;
 }
+function ilinksHtml(sid, edit) {   // liens de la fiche (photos, cahiers, documents…) : S.ilinks[élève] = [{url, label}]
+  const L = (S.ilinks || {})[sid] || [];
+  const list = L.map((l, k) => `<div class="row" style="margin-bottom:4px"><a class="sp" href="${esc(fixUrl(l.url))}" target="_blank" rel="noopener" style="word-break:break-all">🔗 ${esc(l.label || l.url)}</a>${edit ? `<button class="btn sm dan" data-ildel="${sid}|${k}" title="Retirer ce lien">✕</button>` : ""}</div>`).join("");
+  return `<div style="margin-top:${edit ? 6 : 10}px;${edit ? "" : "padding:8px 4px;"}"><div class="muted" style="font-size:.85rem;margin-bottom:4px">🔗 Liens (photos, cahiers…)</div>${list || (edit ? "" : '<span class="muted">—</span>')}${edit ? `<button class="chip" style="padding:4px 9px" data-ilink="${sid}">🔗 Ajouter un lien</button>` : ""}</div>`;
+}
 function fichesTable(print) {
   const sorted = sortRows([...S.students].sort(byName), "fiche", (s, k) => k === "__n" ? s.name : infoOf(s.id, k).trim());
   const W = { long: "min-width:17em;max-width:30em", email: "min-width:13em", tel: "white-space:nowrap", text: "min-width:9em;max-width:18em" };
@@ -1041,11 +1046,12 @@ function viewFiches() {
   const sid = ficheSel;
   const picker = `<div class="row" style="margin-bottom:12px"><button class="btn" data-nav="fiche|-1">◀</button>
     <select data-selfiche class="sp" style="font-size:1.1rem;font-weight:700;padding:10px">${sorted.map(s => `<option value="${s.id}" ${s.id === sid ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select><button class="btn" data-nav="fiche|1">▶</button></div>`;
-  if (fmode === "read") return head + `<div class="card">${picker}${S.fields.map(f => { const v = infoOf(sid, f.id), vv = v ? (f.type === "tel" ? `<a href="tel:${esc(v.replace(/\s+/g, ""))}">${esc(v)}</a>` : f.type === "email" ? `<a href="mailto:${esc(v)}">${esc(v)}</a>` : esc(v)) : '<span class="muted">—</span>'; return `<div id="fr-${f.id}" data-fgo="${f.id}" title="Cliquer pour modifier" style="padding:8px 4px;border-bottom:1px solid var(--bd,#e3e6ee);cursor:pointer"><div class="muted" style="font-size:.85rem">${esc(f.name)}</div><div style="font-weight:600;white-space:pre-wrap">${vv}</div></div>`; }).join("")}</div>`;
+  if (fmode === "read") return head + `<div class="card">${picker}${S.fields.map(f => { const v = infoOf(sid, f.id), vv = v ? (f.type === "tel" ? `<a href="tel:${esc(v.replace(/\s+/g, ""))}">${esc(v)}</a>` : f.type === "email" ? `<a href="mailto:${esc(v)}">${esc(v)}</a>` : esc(v)) : '<span class="muted">—</span>'; return `<div id="fr-${f.id}" data-fgo="${f.id}" title="Cliquer pour modifier" style="padding:8px 4px;border-bottom:1px solid var(--bd,#e3e6ee);cursor:pointer"><div class="muted" style="font-size:.85rem">${esc(f.name)}</div><div style="font-weight:600;white-space:pre-wrap">${vv}</div></div>`; }).join("")}${ilinksHtml(sid, false)}</div>`;
   return head + `<div class="card"><div class="row" style="margin-bottom:12px"><button class="btn" data-nav="fiche|-1">◀</button>
     <select data-selfiche class="sp" style="font-size:1.1rem;font-weight:700;padding:10px">${sorted.map(s => `<option value="${s.id}" ${s.id === sid ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select><button class="btn" data-nav="fiche|1">▶</button></div>
     ${S.fields.map(f => `<div id="fe-${f.id}" style="margin-bottom:14px"><div class="row" style="margin-bottom:4px"><b class="sp">${esc(f.name)}</b></div>${ficheInput(sid, f)}</div>`).join("")}
-    <p class="muted">L'ordre des champs et leur présence dans l'analyse se règlent dans ⚙️ Paramètres › Fiches élèves.</p></div>`;
+    ${ilinksHtml(sid, true)}
+    <p class="muted" style="margin-top:12px">L'ordre des champs et leur présence dans l'analyse se règlent dans ⚙️ Paramètres › Fiches élèves.</p></div>`;
 }
 const emptyStudents = () => `<div class="card"><h2>Bienvenue 👋</h2><p class="muted">Commence par ajouter tes élèves dans ⚙️ Paramètres. La même liste sert partout : compteurs, notes et analyses.</p><p style="margin-top:10px"><button class="btn pri" data-go="set">Ajouter mes élèves</button></p></div>`;
 
@@ -1211,6 +1217,10 @@ function fichBlock(sid) {
   if (!rows.length) return "";
   return `<div class="bbox bfich" data-gofiche="${sid}" title="Ouvrir la fiche de l'élève"><h5>👤 Fiche de l'élève <span class="goedit" style="opacity:.7">✏️ ouvrir la fiche ›</span></h5><div class="bfg">${rows.map(f => `<div class="bfi ${f.type === "long" ? "bfl" : ""}"><span class="bfn">${esc(f.name)}</span><span class="bfv">${esc(infoOf(sid, f.id))}</span></div>`).join("")}</div></div>`;
 }
+function ilinksBlock(sid) {   // liens de la fiche élève, si « Analyse » est coché dans ⚙️ Paramètres › Fiches élèves
+  const L = S.ilinksAn ? ((S.ilinks || {})[sid] || []) : [];
+  return L.length ? `<div class="bbox"><h5>🔗 Liens</h5>${L.map(l => `<div><a href="${esc(fixUrl(l.url))}" target="_blank" rel="noopener" style="word-break:break-all">${esc(l.label || l.url)}</a></div>`).join("")}</div>` : "";
+}
 function bilanEleve(sid) {
   const s = stud(sid), E = allEvals(), date = new Date().toLocaleDateString("fr-FR");
   const g = avgOf(sid, () => true), gc = classAvg(() => true);
@@ -1241,7 +1251,7 @@ function bilanEleve(sid) {
   return `<div class="bil"><div class="bhead"><h1>${esc(s.name)}</h1><span>Bilan de l'élève · ${date}</span></div>${s.excl ? `<div class="bmuted" style="margin:-6px 0 10px">ℹ️ Cet élève n'est pas compté dans les moyennes de la classe.</div>` : ""}${hero}
     <div class="bgrid2">${pf}${cards.join("")}</div>
     ${counters ? `<div class="bgrid4">${counters}</div>` : ""}
-    ${fichBlock(sid)}
+    ${fichBlock(sid)}${ilinksBlock(sid)}
     <div class="bfoot">Notes ramenées sur 10 · vert : acquis (7,5 et plus) · orange : en cours d'acquisition (5 à 7,5) · rouge : à renforcer (moins de 5) · repère noir : moyenne de la classe.<br>🤖 = note automatique calculée à partir des compteurs (relative à la classe).</div></div>`;
 }
 let mdl = null;   // fenêtre flottante de détail (Analyses › élève) : "cnt|mod", "sub|matière|sous-matière" ou "subj|matière"
@@ -1374,6 +1384,7 @@ function viewSettings() {
       <details><summary>Ajouter plusieurs élèves d'un coup</summary><textarea id="bulk" placeholder="Un élève par ligne"></textarea><button class="btn sm pri" data-add="bulk">Ajouter la liste</button></details></div>
     <div class="card"><h2>👤 Fiches élèves — champs</h2><p class="muted">Les champs qui apparaissent sur la page 👤 Fiches. Ajoute ou renomme ce que tu veux (téléphone, e-mail, suivi extérieur…). ▲ ▼ changent l'ordre ; « Analyse » ajoute le champ (s'il est rempli) en bas de la fiche d'analyse de l'élève.</p>
       ${S.fields.map(f => `<div class="row" style="padding:3px 0"><input type="text" value="${esc(f.name)}" data-fname="${f.id}" class="sp"><button class="btn sm" data-fmove="${f.id}|-1">▲</button><button class="btn sm" data-fmove="${f.id}|1">▼</button><button class="chip ${f.inAn ? "on" : ""}" data-fan="${f.id}" title="Afficher ce champ (s'il est rempli) en bas de la fiche d'analyse de l'élève, écran et PDF" style="padding:5px 10px;white-space:nowrap">${f.inAn ? "✓ Analyse" : "Hors analyse"}</button><select data-ftype="${f.id}"><option value="text" ${f.type === "text" ? "selected" : ""}>Texte court</option><option value="long" ${f.type === "long" ? "selected" : ""}>Texte long</option><option value="tel" ${f.type === "tel" ? "selected" : ""}>Téléphone</option><option value="email" ${f.type === "email" ? "selected" : ""}>E-mail</option></select><button class="btn sm dan" data-dfield="${f.id}">✕</button></div>`).join("")}
+      <div class="row" style="padding:3px 0;margin-top:4px"><b class="sp">🔗 Liens (photos, cahiers…)</b><button class="chip ${S.ilinksAn ? "on" : ""}" data-ilan="1" title="Afficher les liens de la fiche en bas de l'analyse de l'élève" style="padding:5px 10px;white-space:nowrap">${S.ilinksAn ? "✓ Analyse" : "Hors analyse"}</button></div>
       <div class="row" style="margin-top:6px"><input type="text" id="add-field" placeholder="Nouveau champ" class="sp"><select id="add-ftype"><option value="text">Texte court</option><option value="long">Texte long</option><option value="tel">Téléphone</option><option value="email">E-mail</option></select><button class="btn sm pri" data-add="field">Ajouter</button></div></div>
     <div class="card"><h2>🔢 Compteurs</h2>
       <h3>🙂 Vie de classe</h3><p class="muted">Pour la note EMC automatique : choisis, pour chaque ligne, « consignes » ou « règles de vie », et un poids (une ligne plus grave peut compter 2 ou 3).</p>${itemList("vie")}${addRow("vie", "Nouvelle ligne de vie de classe")}
@@ -1647,7 +1658,7 @@ const actions = {
 
 /* ---------- Événements ---------- */
 document.addEventListener("click", ev => {
-  const t = ev.target.closest("[data-go],[data-cat],[data-cv],[data-nav],[data-mdl],[data-jcp],[data-jcpgo],[data-jplus],[data-jmdel],[data-dec2],[data-decm2],[data-inc],[data-dec],[data-decm],[data-lend],[data-lend2],[data-inc2],[data-tbl],[data-nt],[data-edit],[data-deval],[data-an],[data-act],[data-ds],[data-di],[data-dsj],[data-dsb],[data-add],[data-addsb],[data-addcp],[data-dcp],[data-dfield],[data-bdet],[data-fab3],[data-ap],[data-apn],[data-apf],[data-apv],[data-tdim],[data-fmove],[data-fgo],[data-fan],[data-sort],[data-ptab],[data-ptog],[data-pmv],[data-pdel],[data-padd],[data-pab],[data-pev],[data-plink],[data-pall],[data-eexcl],[data-psv],[data-jadd],[data-jmv],[data-jdel],[data-jlink],[data-jldel],[data-jnav],[data-jday],[data-jsort],[data-sday],[data-jmode],[data-jcopy],[data-cmv],[data-cday],[data-cedit],[data-cdel],[data-cadd],[data-ccancel],[data-cimpdel],[data-pgo],[data-jgo],[data-fab2],[data-jcol],[data-jtcol],[data-top],[data-gofiche],[data-tdadd],[data-tdfold],[data-tddel],[data-tdmv],[data-tdtop],[data-tdnewbtn],[data-tdchk],[data-tdx],[data-tdclear],[data-tdsd],[data-tdst],[data-tdall],[data-tdmiss]");
+  const t = ev.target.closest("[data-go],[data-cat],[data-cv],[data-nav],[data-mdl],[data-ilink],[data-ilan],[data-ildel],[data-jcp],[data-jcpgo],[data-jplus],[data-jmdel],[data-dec2],[data-decm2],[data-inc],[data-dec],[data-decm],[data-lend],[data-lend2],[data-inc2],[data-tbl],[data-nt],[data-edit],[data-deval],[data-an],[data-act],[data-ds],[data-di],[data-dsj],[data-dsb],[data-add],[data-addsb],[data-addcp],[data-dcp],[data-dfield],[data-bdet],[data-fab3],[data-ap],[data-apn],[data-apf],[data-apv],[data-tdim],[data-fmove],[data-fgo],[data-fan],[data-sort],[data-ptab],[data-ptog],[data-pmv],[data-pdel],[data-padd],[data-pab],[data-pev],[data-plink],[data-pall],[data-eexcl],[data-psv],[data-jadd],[data-jmv],[data-jdel],[data-jlink],[data-jldel],[data-jnav],[data-jday],[data-jsort],[data-sday],[data-jmode],[data-jcopy],[data-cmv],[data-cday],[data-cedit],[data-cdel],[data-cadd],[data-ccancel],[data-cimpdel],[data-pgo],[data-jgo],[data-fab2],[data-jcol],[data-jtcol],[data-top],[data-gofiche],[data-tdadd],[data-tdfold],[data-tddel],[data-tdmv],[data-tdtop],[data-tdnewbtn],[data-tdchk],[data-tdx],[data-tdclear],[data-tdsd],[data-tdst],[data-tdall],[data-tdmiss]");
   if (!t) return; const d = t.dataset;
   if (d.go) return go(d.go);
   if (d.cv) { cview[skey(page)] = d.cv; return render(); }
@@ -1749,6 +1760,10 @@ document.addEventListener("click", ev => {
   if (d.jmv) { const [id, k] = d.jmv.split("|"), r = jfind(id); if (!r) return; const j = r.i + +k; if (j < 0 || j >= r.arr.length) return; [r.arr[r.i], r.arr[j]] = [r.arr[j], r.arr[r.i]]; save(); return render(); }
   if (d.jdel) { const r = jfind(d.jdel); if (!r) return; if ((r.b.text || r.b.title || (r.b.links || []).length) && !confirm("Supprimer ce bloc ?")) return; r.arr.splice(r.i, 1); save(); return render(); }
   if (d.jsort !== undefined) { const a = (S.journal || {})[jdate]; if (!a) return; const k = a.map((x, i) => [x, i]).sort((p, q) => (jview(p[0]).from || "99:99").localeCompare(jview(q[0]).from || "99:99") || p[1] - q[1]).map(x => x[0]); a.splice(0, a.length, ...k); save(); return render(); }
+  if (d.ilink) { if (!stud(d.ilink)) return; let u = prompt("Adresse du lien (photo, cahier, document…) :", ""); if (u === null) return; u = u.trim(); if (!u) return;
+    if (!/^[a-z][a-z0-9+.-]*:/i.test(u)) u = "https://" + u; if (!/^https?:\/\//i.test(u)) return toast("Le lien doit commencer par http ou https");
+    const lb = prompt("Texte à afficher (facultatif, ex. « Cahier de lecture — nov. ») :", ""); ((S.ilinks = S.ilinks || {})[d.ilink] = S.ilinks[d.ilink] || []).push({ url: u, label: (lb || "").trim() }); save(); return render(); }
+  if (d.ildel) { const [id, k] = d.ildel.split("|"), L = (S.ilinks || {})[id]; if (!L) return; L.splice(+k, 1); save(); return render(); }
   if (d.jlink) { const r = jfind(d.jlink); if (!r) return; let u = prompt("Adresse du lien (http…) :", ""); if (u === null) return; u = u.trim(); if (!u) return;
     if (!/^[a-z][a-z0-9+.-]*:/i.test(u)) u = "https://" + u; if (!/^https?:\/\//i.test(u)) return toast("Le lien doit commencer par http ou https");
     const lb = prompt("Texte à afficher (facultatif) :", ""); (r.b.links = r.b.links || []).push({ url: u, label: (lb || "").trim() }); save(); return render(); }
@@ -1783,6 +1798,7 @@ document.addEventListener("click", ev => {
     save(); render(); setTimeout(() => { const n = $("#" + id); n && n.focus(); }, 30); return; }
   if (d.sort) { const [id, k, ty] = d.sort.split("|"), s = sorts[id]; if (!s || s.k !== k) sorts[id] = { k, d: ty === "n" ? "desc" : "asc" }; else if ((ty === "n" && s.d === "desc") || (ty !== "n" && s.d === "asc")) sorts[id].d = ty === "n" ? "asc" : "desc"; else delete sorts[id]; return render(); }
   if (d.fmove) { const [id, k] = d.fmove.split("|"), i = S.fields.findIndex(f => f.id === id), j = i + (+k); if (i < 0 || j < 0 || j >= S.fields.length) return; [S.fields[i], S.fields[j]] = [S.fields[j], S.fields[i]]; save(); return render(); }
+  if (d.ilan) { S.ilinksAn = !S.ilinksAn; save(); return render(); }
   if (d.fan) { const f = S.fields.find(x => x.id === d.fan); f.inAn = !f.inAn; save(); return render(); }
   if (d.jcp !== undefined) { jcp = d.jcp; if (jcp) { let n = dAdd(jdate, 1); for (let k = 0; k < 7 && !S.schoolDays.includes(new Date(n + "T12:00:00").getDay()); k++) n = dAdd(n, 1); jcpd = n; } return render(); }
   if (d.jcpgo) { const r = jfind(jcp), dst = jcpd; if (!r || !/^\d{4}-\d{2}-\d{2}$/.test(dst || "")) return toast("Choisis un jour"); const nb = JSON.parse(JSON.stringify(r.b)); nb.id = uid(); delete nb.dailyOf; const arr = ((S.journal = S.journal || {})[dst] = S.journal[dst] || []); arr.push(nb); jSortDay(arr); jcp = ""; save(); render(); return toast("Bloc copié au " + dLong(dst) + " ✓"); }
