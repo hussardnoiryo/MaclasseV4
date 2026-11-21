@@ -435,7 +435,7 @@ const PAGES = [["prog", "🧭 Progressions"], ["journal", "📓 Cahier journal"]
 let page = "home";   // l'appli s'ouvre (et se rouvre après un rafraîchissement) sur l'index
 let sel = {};            // élève sélectionné par module
 let showTable = {};      // vue classe (tableau) par module
-let ntab = "saisie", histF = "";
+let ntab = "saisie", histF = "", histSb = "";
 let draft = (() => { try { return JSON.parse(localStorage.getItem("classe-ce1-v2-draft")); } catch (e) { return null; } })() || { subjectId: "", subId: "", compId: "", label: "", date: today(), max: 10, grades: {}, editId: null };
 function freshDate() { if (!draft.editId && !draft.dateManual && draft.date !== today()) { draft.date = today(); saveDraft(); } }   // brouillon resté d'hier : on repart de la date du jour
 const saveDraft = () => { try { localStorage.setItem("classe-ce1-v2-draft", JSON.stringify(draft)); } catch (e) {} };
@@ -1103,8 +1103,9 @@ function notesSaisie() {
 function updDraftMean() { const el = $("#dmean"); if (!el) return; const m = mean(Object.values(draft.grades).map(v => on10(v, draft.max))); el.textContent = m === null ? "" : "Moyenne : " + fmt(m) + " / 10"; }
 const badges = e => (e.excl ? ' <span class="auto" style="background:#fde8e8;color:#b42318">⛔ hors moyenne</span>' : "") + ((e.coef ?? 1) !== 1 ? ` <span class="auto">× ${String(e.coef).replace(".", ",")}</span>` : "");
 function notesHisto() {
-  const list = allEvals().filter(e => !histF || e.subjectId === histF).sort((a, b) => b.date.localeCompare(a.date));
-  const f = `<div class="card row"><label>Matière : <select data-hf><option value="">Toutes</option>${S.subjects.map(s => `<option value="${s.id}" ${s.id === histF ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select></label></div>`;
+  const hsj = subj(histF); if (!hsj || !hsj.subs.some(b => b.id === histSb)) histSb = "";
+  const list = allEvals().filter(e => (!histF || e.subjectId === histF) && (!histSb || e.subId === histSb)).sort((a, b) => b.date.localeCompare(a.date));
+  const f = `<div class="card row" style="flex-wrap:wrap;gap:10px"><label>Matière : <select data-hf><option value="">Toutes</option>${S.subjects.map(s => `<option value="${s.id}" ${s.id === histF ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select></label><label>Sous-matière : <select data-hsb ${hsj && hsj.subs.length ? "" : "disabled"}><option value="">${hsj ? (hsj.subs.length ? "Toutes" : "aucune") : "(choisis une matière)"}</option>${hsj ? hsj.subs.map(b => `<option value="${b.id}" ${b.id === histSb ? "selected" : ""}>${esc(b.name)}</option>`).join("") : ""}</select></label></div>`;
   if (!list.length) return f + `<div class="card muted">Aucune évaluation pour le moment.</div>`;
   return f + list.map(e => {
     const sj = subj(e.subjectId), sb = subOf(sj, e.subId), m = mean(counted().map(s => on10(e.grades[s.id], e.max)));
@@ -1884,7 +1885,8 @@ document.addEventListener("change", ev => {
   if (d.g) { const v = t.value.replace(",", "."); if (v === "") delete draft.grades[d.g]; else draft.grades[d.g] = parseFloat(v); saveDraft(); const p = $("#gp-" + d.g); if (p) p.innerHTML = pill(on10(draft.grades[d.g], draft.max)); updDraftMean(); return; }
   if (d.cl !== undefined) { if (d.cl === "sj") { clSj = t.value; clSb = clCp = ""; } else if (d.cl === "sb") { clSb = t.value; clCp = ""; } else clCp = t.value; if (clSj) sorts.cone = { k: "__a", d: "asc" }; else delete sorts.cone; return render(); }
   if (d.cone !== undefined) { classOne = t.value; if (classOne) sorts.cone = { k: "__a", d: "asc" }; else delete sorts.cone; return render(); }
-  if (d.hf !== undefined) { histF = t.value; return render(); }
+  if (d.hf !== undefined) { histF = t.value; histSb = ""; return render(); }
+  if (d.hsb !== undefined) { histSb = t.value; return render(); }
   if (d.rn) { const s = stud(d.rn), v = t.value.trim(); if (v) { s.name = v; save(); } return render(); }
   if (d.ri) { const [m, id] = d.ri.split("|"), it = S.items[m].find(i => i.id === id), v = t.value.trim(); if (v) { it.name = v; if (m === "vie" && !it.emc) it.emc = inferEmc(v); save(); } return render(); }
   if (d.emc) { S.items.vie.find(i => i.id === d.emc).emc = t.value; save(); return; }
