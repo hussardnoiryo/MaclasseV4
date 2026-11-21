@@ -69,7 +69,7 @@ th{font-size:.78rem;color:var(--muted);vertical-align:bottom}
 .fl{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .bil{font-size:15px;color:#222}.bil h1{font-size:1.9em}.bil small{color:#777;font-weight:500}
 .bhead{display:flex;justify-content:space-between;align-items:baseline;border-bottom:3px solid #3b5bdb;padding-bottom:5px;margin-bottom:14px}.bhead span{color:#666;font-size:.9em}
-.bhero{display:flex;gap:16px;align-items:center;margin-bottom:14px}.bring{width:7.5em;height:7.5em;flex:none}
+.bhero{display:flex;gap:16px;align-items:center;margin-bottom:14px;flex-wrap:wrap}.bflu{margin-left:auto;background:#f4f6ff;border:1px solid #dfe4ff;border-radius:12px;padding:8px 12px;min-width:170px}.bflu h5{margin:0 0 2px;font-size:.9rem}.bflu h5 small{font-weight:400;color:#777}.bfbig{font-size:2.1rem;font-weight:800;color:#2b2d42;line-height:1}.bfs{font-size:.78rem;color:#555}.bring{width:7.5em;height:7.5em;flex:none}
 .bhl{font-size:1.1em;display:flex;gap:8px;align-items:center}.bhs{color:#555;margin-top:4px}
 .bp{display:inline-block;min-width:3.6em;text-align:center;padding:.12em .65em;border-radius:999px;font-weight:700;background:#eef0f5;color:#666;white-space:nowrap}
 .bp.g{background:#e3f5ec;color:#1d7a50}.bp.o{background:#fdf0dc;color:#a8650c}.bp.r{background:#fde4e4;color:#b02a2a}
@@ -1233,13 +1233,24 @@ function fichBlock(sid) {
   if (!rows.length) return "";
   return `<div class="bbox bfich" data-gofiche="${sid}" title="Ouvrir la fiche de l'élève"><h5>👤 Fiche de l'élève <span class="goedit" style="opacity:.7">✏️ ouvrir la fiche ›</span></h5><div class="bfg">${rows.map(f => `<div class="bfi ${f.type === "long" ? "bfl" : ""}"><span class="bfn">${esc(f.name)}</span><span class="bfv">${f.type === "url" ? `<a href="${esc(fixUrl(infoOf(sid, f.id)))}" target="_blank" rel="noopener">🔗 Ouvrir le lien</a>` : esc(infoOf(sid, f.id))}</span></div>`).join("")}</div></div>`;
 }
+/* Fluence (mots lus par minute) : score brut, pas la note sur 10. On lit toute l'année (archive des trimestres incluse). */
+const isFlu = e => { const sj = subj(e.subjectId), cp = compOf(subOf(sj, e.subId), e.compId); return /fluence/i.test((cp ? cp.name : "") + " " + (e.label || "")); };
+const fluEvals = sid => evalsAll().filter(e => isFlu(e) && typeof e.grades[sid] === "number").sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+function fluenceBlock(sid) {
+  const L = fluEvals(sid); if (!L.length) return "";
+  const v = L.map(e => e.grades[sid]), last = v[v.length - 1], first = v[0], d = last - first, W = 150, H = 40, mx = Math.max(...v), mn = Math.min(...v), rg = Math.max(1, mx - mn);
+  const X = i => L.length === 1 ? W / 2 : 6 + i * (W - 12) / (L.length - 1), Y = x => H - 6 - (x - mn) / rg * (H - 12);
+  const spark = L.length > 1 ? `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;margin-top:4px"><polyline fill="none" stroke="#4361ee" stroke-width="2.5" stroke-linejoin="round" points="${v.map((x, i) => X(i).toFixed(1) + "," + Y(x).toFixed(1)).join(" ")}"/>${v.map((x, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(x).toFixed(1)}" r="${i === v.length - 1 ? 4 : 2.5}" fill="#4361ee"/>`).join("")}</svg>` : "";
+  const cl = mean(counted().map(st => { const q = fluEvals(st.id); return q.length ? q[q.length - 1].grades[st.id] : null; }).filter(x => x !== null));
+  return `<div class="bflu bclick" data-mdl="flu|" title="Cliquer pour voir toutes les mesures"><h5>📖 Fluence <small>mots lus / minute</small></h5><div><span class="bfbig">${fmt(last)}</span> <small>mots/min</small></div><div class="bfs">${L.length > 1 ? `${d >= 0 ? "▲ +" : "▼ −"}${fmt(Math.abs(d))} depuis le ${frDate(L[0].date).slice(0, 5)} (${fmt(first)})` : "1re mesure"}${cl !== null ? ` · classe : ${fmt(cl)}` : ""}</div>${spark}</div>`;
+}
 function bilanEleve(sid) {
   const s = stud(sid), E = allEvals(), date = new Date().toLocaleDateString("fr-FR");
   const g = avgOf(sid, () => true), gc = classAvg(() => true);
   const nEv = E.filter(e => typeof e.grades[sid] === "number").length;
   const C = 2 * Math.PI * 52, col = { g: "#2f9e6b", o: "#c9822a", r: "#d64545", "": "#aab" }[lvl(g)];
-  const hero = g === null ? "" : `<div class="bhero"><svg viewBox="0 0 120 120" class="bring"><circle cx="60" cy="60" r="52" fill="none" stroke="#e9ebf3" stroke-width="12"/><circle cx="60" cy="60" r="52" fill="none" stroke="${col}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${(C * g / 10).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 60 60)"/><text x="60" y="64" text-anchor="middle" font-size="30" font-weight="800" fill="#222">${fmt(g)}</text><text x="60" y="82" text-anchor="middle" font-size="12" fill="#888">/10</text></svg>
-    <div><div class="bhl">${pl2(g)} <b>${g >= 7.5 ? "Acquis" : g >= 5 ? "En cours d'acquisition" : "À renforcer"}</b></div><div class="bhs">${nEv} évaluation${nEv > 1 ? "s" : ""}${gc !== null ? ` · classe : ${fmt(gc)} (${g - gc >= 0 ? "+" : "−"}${fmt(Math.abs(g - gc))})` : ""}</div></div></div>`;
+  const flu = fluenceBlock(sid), hero = g === null ? (flu ? `<div class="bhero">${flu}</div>` : "") : `<div class="bhero"><svg viewBox="0 0 120 120" class="bring"><circle cx="60" cy="60" r="52" fill="none" stroke="#e9ebf3" stroke-width="12"/><circle cx="60" cy="60" r="52" fill="none" stroke="${col}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${(C * g / 10).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 60 60)"/><text x="60" y="64" text-anchor="middle" font-size="30" font-weight="800" fill="#222">${fmt(g)}</text><text x="60" y="82" text-anchor="middle" font-size="12" fill="#888">/10</text></svg>
+    <div><div class="bhl">${pl2(g)} <b>${g >= 7.5 ? "Acquis" : g >= 5 ? "En cours d'acquisition" : "À renforcer"}</b></div><div class="bhs">${nEv} évaluation${nEv > 1 ? "s" : ""}${gc !== null ? ` · classe : ${fmt(gc)} (${g - gc >= 0 ? "+" : "−"}${fmt(Math.abs(g - gc))})` : ""}</div></div>${flu}</div>`;
   const U = bilanUnits(sid), forts = U.filter(x => x.v >= 7.5).sort((a, b) => b.v - a.v).slice(0, 3), trav = U.filter(x => x.v < 7.5).sort((a, b) => a.v - b.v).slice(0, 4);
   const urow = x => `<div class="burow"><span>${esc(x.n)}${x.s ? ` <small>· ${esc(x.s)}</small>` : ""}</span>${pl2(x.v)}</div>`;
   const pf = `<div class="bbox"><h5>💪 Points forts</h5>${forts.map(urow).join("") || '<div class="bmuted">—</div>'}</div><div class="bbox"><h5>🎯 À travailler</h5>${trav.map(urow).join("") || '<div class="bmuted">—</div>'}</div>`;
@@ -1287,7 +1298,10 @@ function mdlHtml(sid) {
   const [t, a, b] = mdl.split("|"), E = allEvals().filter(e => typeof e.grades[sid] === "number"), byDate = (x, y) => y.date.localeCompare(x.date);
   const name = { sons: "🔊 Sons", ecriture: "✍️ Écriture", vie: "🙂 Vie de classe", matos: "📦 Matériel prêté" };
   let title = "", body = "";
-  if (t === "cnt") { title = name[a] || ""; body = mdlCounter(sid, a); }
+  if (t === "flu") {
+    const L = fluEvals(sid).reverse(); title = "📖 Fluence (mots / minute)";
+    body = L.map(e => { const c = mean(counted().map(st => typeof e.grades[st.id] === "number" ? e.grades[st.id] : null).filter(x => x !== null)); return `<div class="dev" style="padding-left:4px"><span class="dd">${frDate(e.date)}</span><span class="dn">${esc(e.label || "(sans intitulé)")}</span><span class="dm"><b>${e.grades[sid]}</b> mots/min</span><span class="bc">classe ${c === null ? "–" : fmt(c)}</span></div>`; }).join("") + `<p class="muted" style="margin-top:8px">Scores bruts. Dans les moyennes et le bulletin, ils comptent comme une note sur 10 (score ÷ barème de l'évaluation).</p>`;
+  } else if (t === "cnt") { title = name[a] || ""; body = mdlCounter(sid, a); }
   else {
     const sj = subj(a); if (!sj) return "";
     if (t === "sub") {
