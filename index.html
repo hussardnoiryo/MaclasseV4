@@ -431,7 +431,7 @@ function classNotesTable(print) {
 }
 
 /* ===================== Interface ===================== */
-const PAGES = [["prog", "🧭 Progressions"], ["journal", "📓 Cahier journal"], ["appel", "📋 Appel"], ["cal", "📅 Calendrier"], ["todo", "✅ À faire"], ["vie", "🙂 Vie de classe"], ["matos", "📦 Matériel"], ["sons", "🔊✍️ Sons & écriture"], ["notes", "📒 Notes"], ["fiches", "👤 Fiches"], ["an", "🔎 Analyses"], ["set", "⚙️ Paramètres"]];
+const PAGES = [["prog", "🧭 Progressions"], ["journal", "📓 Cahier journal"], ["appel", "📋 Appel"], ["cal", "📅 Calendrier"], ["todo", "✅ À faire"], ["vie", "🙂 Vie de classe"], ["matos", "📦 Matériel"], ["sons", "🔊✍️ Sons & écriture"], ["notes", "📕 Notes"], ["fiches", "👤 Fiches"], ["an", "🔎 Analyses"], ["set", "⚙️ Paramètres"]];
 let page = "home";   // l'appli s'ouvre (et se rouvre après un rafraîchissement) sur l'index
 let sel = {};            // élève sélectionné par module
 let showTable = {};      // vue classe (tableau) par module
@@ -639,7 +639,7 @@ function viewProg() {
   return tabs + note + (ptab === "edit" ? progEdit() : ptab === "mat" ? progViewCard(progMatiere()) : progViewCard(progPeriode()));
 }
 function progEdit() {
-  const note = `<div class="card muted">Les matières, sous-matières et compétences sont les mêmes que dans <b>📒 Notes</b> et ⚙️ Paramètres : ce que tu ajoutes ici s'y retrouve tout de suite (et inversement). Une compétence passe en <b style="color:#b02a2a">rouge</b> quand elle est abordée, en <b style="color:#1d7a50">vert</b> quand elle est évaluée — automatiquement si une note lui est rattachée.</div>`;
+  const note = `<div class="card muted">Les matières, sous-matières et compétences sont les mêmes que dans <b>📕 Notes</b> et ⚙️ Paramètres : ce que tu ajoutes ici s'y retrouve tout de suite (et inversement). Une compétence passe en <b style="color:#b02a2a">rouge</b> quand elle est abordée, en <b style="color:#1d7a50">vert</b> quand elle est évaluée — automatiquement si une note lui est rattachée.</div>`;
   
   const subjects = S.subjects.map((sj, i) => {
     const st = progStats(sj), open = !!popen[sj.id];
@@ -1139,7 +1139,7 @@ function suiviCard() {   // « Suivi annuel » : en bas de l'analyse, à l'écra
   } else {   // la classe : un tableau par compétence suivie
     const sorted = [...S.students].sort(byName);
     body = sel.map(g => { const E = seriesEvals(g), c = suiviClass(g);
-      if (!E.length) return `<h3>${esc(g.name)} <small class="muted">${esc(g.sj.name)} › ${esc(g.sb.name)}</small></h3><p class="muted">Aucune évaluation rattachée pour le moment (choisis la compétence dans 📒 Notes).</p>`;
+      if (!E.length) return `<h3>${esc(g.name)} <small class="muted">${esc(g.sj.name)} › ${esc(g.sb.name)}</small></h3><p class="muted">Aucune évaluation rattachée pour le moment (choisis la compétence dans 📕 Notes).</p>`;
       const head = all ? E.map(e => `<th>${esc(e.label || "éval.")}<br>${dt(e.date)}</th>`).join("") : "<th>1re évaluation</th><th>Dernière</th>";
       const row = st => { const r = suiviOf(g, st.id, E); if (!r) return `<td colspan="${all ? E.length + 1 : 3}" class="muted">–</td>`;
         return (all ? E.map(e => `<td>${pc(on10(e.grades[st.id], e.max))}</td>`).join("") : `<td>${pc(r.v1)} ${dt(r.d1)}</td><td>${r.v2 !== null ? `${pc(r.v2)} ${dt(r.d2)}` : "–"}</td>`) + `<td>${dlt(r.delta)}</td>`; };
