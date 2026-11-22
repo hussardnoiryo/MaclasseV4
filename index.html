@@ -298,27 +298,31 @@ function findSub(sjRe, subRe) {
   const sj = S.subjects.find(s => sjRe.test(norm(s.name))); const sb = sj && sj.subs.find(b => subRe.test(norm(b.name)));
   return sj && sb ? { sj, sb } : null;
 }
+function autoSpecs() {
+  const on = mod => S.items[mod].filter(i => !i.noAuto);   // lignes décochées dans Notes › Évaluations › Automatiques : ignorées
+  return [
+    { key: "ecriture", label: "Compteur d'écriture (automatique)", title: "✍️ Écriture", where: "Français › Écriture", t: findSub(/fran/, /ecriture/),
+      val: sid => on("ecriture").reduce((a, it) => a + tot(sid, "ecriture", it.id), 0), has: on("ecriture").length },
+    { key: "sons", label: "Compteur de sons (automatique)", title: "🔊 Sons", where: "Français › Orthographe", t: findSub(/fran/, /orthographe/),
+      val: sid => on("sons").reduce((a, it) => a + tot(sid, "sons", it.id), 0), has: on("sons").length },
+    { key: "emc-consignes", label: "Respect des consignes (automatique)", title: "🙂 EMC › Respect des consignes", where: "EMC › Respect des consignes", t: findSub(/emc|moral/, /consigne/),
+      val: sid => S.items.vie.filter(i => i.emc === "consignes").reduce((a, it) => a + (it.w ?? 1) * tot(sid, "vie", it.id), 0), has: S.items.vie.some(i => i.emc === "consignes") },
+    { key: "emc-regles", label: "Respect des règles de vie (automatique)", title: "🙂 EMC › Respect des règles de vie", where: "EMC › Respect des règles de vie", t: findSub(/emc|moral/, /regle/),
+      val: sid => S.items.vie.filter(i => i.emc === "regles").reduce((a, it) => a + (it.w ?? 1) * tot(sid, "vie", it.id), 0), has: S.items.vie.some(i => i.emc === "regles") }
+  ];
+}
+const autoCoef = k => { const c = (S.abounds || {})[k]; return c && c.coef !== undefined && c.coef !== "" && Number.isFinite(+c.coef) ? Math.max(0, +c.coef) : 1; };
 function autoEvals() {
   autoWarn = [];
   const out = [];
-  const specs = [
-    { key: "ecriture", label: "Compteur d'écriture (automatique)", where: "Français › Écriture", t: findSub(/fran/, /ecriture/),
-      val: sid => S.items.ecriture.reduce((a, it) => a + tot(sid, "ecriture", it.id), 0), has: S.items.ecriture.length },
-    { key: "sons", label: "Compteur de sons (automatique)", where: "Français › Orthographe", t: findSub(/fran/, /orthographe/),
-      val: sid => S.items.sons.reduce((a, it) => a + tot(sid, "sons", it.id), 0), has: S.items.sons.length },
-    { key: "emc-consignes", label: "Respect des consignes (automatique)", where: "EMC › Respect des consignes", t: findSub(/emc|moral/, /consigne/),
-      val: sid => S.items.vie.filter(i => i.emc === "consignes").reduce((a, it) => a + (it.w ?? 1) * tot(sid, "vie", it.id), 0), has: S.items.vie.some(i => i.emc === "consignes") },
-    { key: "emc-regles", label: "Respect des règles de vie (automatique)", where: "EMC › Respect des règles de vie", t: findSub(/emc|moral/, /regle/),
-      val: sid => S.items.vie.filter(i => i.emc === "regles").reduce((a, it) => a + (it.w ?? 1) * tot(sid, "vie", it.id), 0), has: S.items.vie.some(i => i.emc === "regles") }
-  ];
-  specs.forEach(sp => {
+  autoSpecs().forEach(sp => {
     if (!sp.has || !S.students.length) return;
     if (!sp.t) { autoWarn.push(sp.where); return; }
     const vals = {}; S.students.forEach(s => vals[s.id] = sp.val(s.id));
     const mx = Math.max(0, ...counted().map(s => vals[s.id])); if (mx === 0) return;
     const [lo, hi] = boundsOf(sp.key);
     const grades = {}; S.students.forEach(s => grades[s.id] = Math.round(Math.max(lo, Math.min(hi, lo + (hi - lo) * (1 - vals[s.id] / mx))) * 10) / 10);
-    out.push({ id: "auto-" + sp.key, auto: true, coef: (() => { const c = (S.abounds || {})[sp.key]; return c && c.coef !== undefined && c.coef !== "" && Number.isFinite(+c.coef) ? Math.max(0, +c.coef) : 1; })(), date: today(), subjectId: sp.t.sj.id, subId: sp.t.sb.id, label: sp.label, max: 10, grades });
+    out.push({ id: "auto-" + sp.key, auto: true, akey: sp.key, vals, mx, lo, hi, coef: autoCoef(sp.key), date: today(), subjectId: sp.t.sj.id, subId: sp.t.sb.id, label: sp.label, max: 10, grades });
   });
   return out;
 }
@@ -1074,9 +1078,9 @@ const emptyStudents = () => `<div class="card"><h2>Bienvenue 👋</h2><p class="
 /* ---------- Notes ---------- */
 function viewNotes() {
   freshDate();
-  const tabs = `<div class="chips">${[["saisie", "✏️ Saisie"], ["histo", "📜 Évaluations"]].map(([k, l]) => `<button class="chip ${ntab === k ? "on" : ""}" data-nt="${k}">${l}</button>`).join("")}</div>`;
+  const tabs = `<div class="chips" style="flex-wrap:wrap">${[["saisie", "✏️ Saisie"], ["eleve", "👤 Par élève"], ["histo", "📜 Évaluations"]].map(([k, l]) => `<button class="chip ${ntab === k ? "on" : ""}" data-nt="${k}">${l}</button>`).join("")}</div>`;
   if (!S.students.length) return emptyStudents();
-  return tabs + (ntab === "histo" ? notesHisto() : notesSaisie());
+  return tabs + (ntab === "histo" ? notesHisto() : ntab === "eleve" ? notesEleve() : notesSaisie());
 }
 function autoNote() {
   let h = "";
@@ -1102,16 +1106,62 @@ function notesSaisie() {
 }
 function updDraftMean() { const el = $("#dmean"); if (!el) return; const m = mean(Object.values(draft.grades).map(v => on10(v, draft.max))); el.textContent = m === null ? "" : "Moyenne : " + fmt(m) + " / 10"; }
 const badges = e => (e.excl ? ' <span class="auto" style="background:#fde8e8;color:#b42318">⛔ hors moyenne</span>' : "") + ((e.coef ?? 1) !== 1 ? ` <span class="auto">× ${String(e.coef).replace(".", ",")}</span>` : "");
+let hsec = "saisies", aview = "";   // section affichée dans Notes › Évaluations ; note automatique ouverte dans la fenêtre « Voir les notes »
 function notesHisto() {
+  const secs = `<div class="chips" style="margin-top:8px">${[["saisies", "✍️ Notes saisies"], ["auto", "🤖 Notes automatiques"]].map(([k, l]) => `<button class="chip ${hsec === k ? "on" : ""}" data-hsec="${k}">${l}</button>`).join("")}</div>`;
+  return secs + (hsec === "auto" ? notesAuto() : notesSaisies());
+}
+function notesSaisies() {
   const hsj = subj(histF); if (!hsj || !hsj.subs.some(b => b.id === histSb)) histSb = "";
-  const list = allEvals().filter(e => (!histF || e.subjectId === histF) && (!histSb || e.subId === histSb)).sort((a, b) => b.date.localeCompare(a.date));
+  const list = S.evals.filter(e => (!histF || e.subjectId === histF) && (!histSb || e.subId === histSb)).sort((a, b) => b.date.localeCompare(a.date));
   const f = `<div class="card row" style="flex-wrap:wrap;gap:10px"><label>Matière : <select data-hf><option value="">Toutes</option>${S.subjects.map(s => `<option value="${s.id}" ${s.id === histF ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select></label><label>Sous-matière : <select data-hsb ${hsj && hsj.subs.length ? "" : "disabled"}><option value="">${hsj ? (hsj.subs.length ? "Toutes" : "aucune") : "(choisis une matière)"}</option>${hsj ? hsj.subs.map(b => `<option value="${b.id}" ${b.id === histSb ? "selected" : ""}>${esc(b.name)}</option>`).join("") : ""}</select></label></div>`;
   if (!list.length) return f + `<div class="card muted">Aucune évaluation pour le moment.</div>`;
   return f + list.map(e => {
     const sj = subj(e.subjectId), sb = subOf(sj, e.subId), m = mean(counted().map(s => on10(e.grades[s.id], e.max)));
     return `<div class="card"><div class="row"><div class="sp"><b>${esc(e.label || "(sans intitulé)")}</b>${e.auto ? '<span class="auto">🤖 automatique</span>' : ""}${badges(e)}<br><span class="muted">${esc(sj ? sj.name : "?")}${sb ? " › " + esc(sb.name) : ""}${compOf(sb, e.compId) ? " › " + esc(compOf(sb, e.compId).name) : ""} · ${frDate(e.date)} · /${e.max}</span></div>${pill(m)}
       ${e.auto ? "" : `<button class="btn sm" data-eexcl="${e.id}" title="Compter ou non cette évaluation dans la moyenne">${e.excl ? "Compter" : "Exclure"}</button><button class="btn sm" data-edit="${e.id}">Modifier</button><button class="btn sm dan" data-deval="${e.id}">Supprimer</button>`}</div></div>`;
-  }).join("") + autoNote();
+  }).join("");
+}
+/* Notes automatiques : réglages (compteurs pris en compte, bornes, coefficient) et accès aux notes de chaque élève */
+function notesAuto() {
+  const E = autoEvals(), specs = autoSpecs();
+  const chipsFor = (mod, ttl) => S.items[mod].length ? `<div style="margin:6px 0"><b>${ttl}</b> <span class="muted">— touche pour (dé)cocher les lignes comptées</span><div class="chips" style="margin-top:4px">${S.items[mod].map(it => `<button class="chip ${it.noAuto ? "" : "on"}" data-anoff="${mod}|${it.id}">${it.noAuto ? "✕" : "✓"} ${esc(it.name)}</button>`).join("")}</div></div>` : "";
+  const vie = S.items.vie.length ? `<div style="margin:10px 0 4px"><b>🙂 Vie de classe → notes EMC</b> <span class="muted">— pour chaque ligne : sert à « consignes », à « règles de vie » ou à aucune note, avec un poids (une ligne plus grave peut compter 2 ou 3)</span></div>${S.items.vie.map(it => `<div class="row" style="padding:3px 0"><span class="sp">${esc(it.name)}</span><select data-emc="${it.id}"><option value="">pas de note EMC</option><option value="consignes" ${it.emc === "consignes" ? "selected" : ""}>EMC · consignes</option><option value="regles" ${it.emc === "regles" ? "selected" : ""}>EMC · règles de vie</option></select><label class="muted">poids <input type="number" min="0" step="0.5" value="${it.w ?? 1}" data-w="${it.id}" style="width:62px"></label></div>`).join("")}` : "";
+  const cards = specs.map(sp => {
+    const e = E.find(x => x.akey === sp.key), [lo, hi] = boundsOf(sp.key), m = e ? mean(counted().map(s => e.grades[s.id])) : null;
+    const state = !sp.has ? "Aucun compteur pris en compte." : !sp.t ? `⚠ La sous-matière « ${esc(sp.where)} » n'existe pas (🧭 Progressions).` : !e ? "Pas de note pour l'instant : aucune erreur ou remarque dans la classe." : "";
+    return `<div class="card"><div class="row"><div class="sp"><b>${sp.title}</b><br><span class="muted">${esc(sp.where)}</span></div>${pill(m)}<button class="btn sm" data-aview="${sp.key}" ${sp.has ? "" : "disabled"}>👁 Voir les notes</button></div>
+      ${state ? `<p class="muted" style="margin:6px 0 0">${state}</p>` : ""}
+      <div class="row" style="margin-top:8px"><label>min <input type="number" min="0" max="10" step="0.5" inputmode="decimal" style="width:70px" value="${lo}" data-ab="${sp.key}|min"></label><label>max <input type="number" min="0" max="10" step="0.5" inputmode="decimal" style="width:70px" value="${hi}" data-ab="${sp.key}|max"></label><label>coef <input type="number" min="0" step="0.5" inputmode="decimal" style="width:70px" value="${((S.abounds || {})[sp.key] || {}).coef ?? 1}" data-ab="${sp.key}|coef"></label></div></div>`;
+  }).join("");
+  return `<div class="card"><h2>🤖 Notes automatiques</h2>
+    <p class="muted">Calculées à partir des compteurs, jamais enregistrées. 10/10 par défaut = aucune erreur ; la <b>note minimale</b> = l'élève qui en a le plus dans la classe. Les <b>bornes</b> (min / max, sur 10) et le <b>coef</b> (1 par défaut ; 0 = la note ne compte pas dans les moyennes) se règlent pour chaque note ci-dessous.</p>
+    ${chipsFor("ecriture", "✍️ Écriture")}${chipsFor("sons", "🔊 Sons")}${vie}
+    <div class="row" style="margin-top:10px"><button class="btn sm" data-act="abReset">Remettre les bornes par défaut (3 et 10)</button></div></div>${cards}${autoNote()}${aviewHtml()}`;
+}
+function aviewHtml() {
+  const sp = aview && autoSpecs().find(x => x.key === aview); if (!sp) return "";
+  const e = autoEvals().find(x => x.akey === sp.key), [lo, hi] = boundsOf(sp.key);
+  const vals = {}; S.students.forEach(s => vals[s.id] = sp.val(s.id));
+  const mx = Math.max(0, ...counted().map(s => vals[s.id]));
+  const rows = [...S.students].map(s => ({ s, v: vals[s.id], g: e ? e.grades[s.id] : null })).sort((a, b) => (a.g ?? 99) - (b.g ?? 99) || a.s.name.localeCompare(b.s.name, "fr"));
+  const body = e ? rows.map(r => `<div class="dev" style="padding-left:4px"><span class="dn">${esc(r.s.name)}${r.s.excl ? ' <small class="muted">(hors moyenne)</small>' : ""}</span><span class="dm">${fmt(r.v)} ${sp.key.startsWith("emc") ? "pts" : "relevé" + (r.v > 1 ? "s" : "")}</span>${pill(r.g)}</div>`).join("") : '<p class="muted">Aucune erreur ou remarque dans la classe : pas de note pour l\'instant.</p>';
+  return `<div class="mdlbg" data-aview=""></div><div class="mdlbox" role="dialog"><div class="row" style="margin-bottom:6px"><h3 class="sp" style="margin:0">${sp.title}</h3><button class="btn sm" data-aview="" title="Fermer (Échap)">✕ Fermer</button></div>
+    <p class="muted" style="margin:0 0 8px">${e ? `Le plus d'erreurs de la classe : <b>${fmt(mx)}</b> → ${fmt(lo)}/10. Aucune erreur → ${fmt(hi)}/10. Classés du plus en difficulté au plus à l'aise.` : ""}</p>${body}</div>`;
+}
+/* Saisie par élève : on choisit un prénom, on renseigne plusieurs évaluations d'un coup, puis on passe au suivant */
+let nsel = "", nsj = "", nmiss = true;
+function notesEleve() {
+  const L = [...S.students].sort(byName); if (!L.some(s => s.id === nsel)) nsel = L[0].id;
+  const i = L.findIndex(s => s.id === nsel), st = L[i];
+  const all = S.evals.filter(e => !e.auto), done = all.filter(e => typeof e.grades[nsel] === "number").length;
+  const list = all.filter(e => (!nsj || e.subjectId === nsj) && (!nmiss || typeof e.grades[nsel] !== "number")).sort((a, b) => b.date.localeCompare(a.date) || (a.label || "").localeCompare(b.label || "", "fr"));
+  const chips = `<div class="chips">${L.map(s => `<button class="chip ${s.id === nsel ? "on" : ""}" data-nsel="${s.id}">${esc(s.name)}</button>`).join("")}</div>`;
+  const nav = `<div class="row" style="margin-top:10px"><button class="btn" data-nstep="-1">← Précédent</button><b class="sp" style="text-align:center;font-size:1.15rem">${esc(st.name)} <span class="muted" style="font-weight:400">${done} / ${all.length}</span></b><button class="btn pri" data-nstep="1">Suivant →</button></div>`;
+  const flt = `<div class="row" style="margin-top:8px"><label>Matière : <select data-nsj><option value="">Toutes</option>${S.subjects.map(s => `<option value="${s.id}" ${s.id === nsj ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select></label><label class="chk"><input type="checkbox" data-nmiss ${nmiss ? "checked" : ""}> seulement les notes manquantes</label></div>`;
+  const rows = list.map(e => { const sj = subj(e.subjectId), sb = subOf(sj, e.subId), cp = compOf(sb, e.compId), v = e.grades[nsel];
+    return `<div class="card" style="padding:8px 10px"><div class="row" style="flex-wrap:nowrap"><div class="sp" style="min-width:0"><b>${esc(e.label || "(sans intitulé)")}</b>${badges(e)}<br><span class="muted">${esc(sj ? sj.name : "?")}${sb ? " › " + esc(sb.name) : ""}${cp ? " › " + esc(cp.name) : ""} · ${frDate(e.date)}</span></div><input type="number" step="0.5" min="0" inputmode="decimal" data-pg="${e.id}" value="${v ?? ""}" style="width:78px;text-align:center;font-size:1.1rem"><span class="muted">/${e.max}</span><span id="pgp-${e.id}">${pill(on10(v, e.max))}</span></div></div>`; }).join("");
+  return `<div class="card"><h2>👤 Notes par élève</h2><p class="muted">Choisis un élève, renseigne ses notes dans les évaluations déjà créées (✏️ Saisie), puis passe au suivant. Chaque note s'enregistre dès que tu quittes la case.</p>${chips}${nav}${flt}</div>${rows || `<div class="card muted">${all.length ? "Rien à compléter pour " + esc(st.name) + " 🎉" : "Aucune évaluation : crée-en d'abord dans ✏️ Saisie."}</div>`}${list.length > 5 ? `<div class="row"><button class="btn pri sp" data-nstep="1">Suivant →</button></div>` : ""}`;
 }
 
 /* ---------- Analyses ---------- */
@@ -1395,8 +1445,6 @@ window.addEventListener("beforeprint", buildSheet);
 function viewSettings() {
   const studs = [...S.students].sort(byName).map(s => `<div class="row" style="padding:3px 0"><input type="text" value="${esc(s.name)}" data-rn="${s.id}" class="sp"><label class="muted" style="white-space:nowrap" title="Date de naissance : l'anniversaire apparaît chaque année dans le calendrier et le cahier journal">🎂 <input type="date" data-birth="${s.id}" value="${esc(s.birth || "")}"></label><label class="muted" style="white-space:nowrap" title="Cet élève garde ses notes et son bilan, mais ne compte pas dans les moyennes de la classe"><input type="checkbox" data-excl="${s.id}" ${s.excl ? "checked" : ""}> hors moyenne</label><button class="btn sm dan" data-ds="${s.id}">✕</button></div>`).join("");
   const itemList = mod => S.items[mod].map(it => `<div class="row" style="padding:3px 0"><input type="text" value="${esc(it.name)}" data-ri="${mod}|${it.id}" class="sp">
-      ${mod === "vie" ? `<select data-emc="${it.id}" title="Compte pour une note automatique EMC"><option value="">pas de note EMC</option><option value="consignes" ${it.emc === "consignes" ? "selected" : ""}>EMC · consignes</option><option value="regles" ${it.emc === "regles" ? "selected" : ""}>EMC · règles de vie</option></select>
-      <label class="muted">poids <input type="number" min="0" step="0.5" value="${it.w ?? 1}" data-w="${it.id}" style="width:62px"></label>` : ""}
       <button class="btn sm dan" data-di="${mod}|${it.id}">✕</button></div>`).join("");
   const addRow = (key, ph) => `<div class="row" style="margin-top:6px"><input type="text" id="add-${key}" placeholder="${ph}" class="sp"><button class="btn sm pri" data-add="${key}">Ajouter</button></div>`;
   const subjs = S.subjects.map(sj => `<div style="padding:6px 0;border-bottom:1px solid #f0f2f7"><div class="row"><input type="text" value="${esc(sj.name)}" data-rsj="${sj.id}" class="sp"><button class="btn sm dan" data-dsj="${sj.id}">✕</button></div>
@@ -1411,7 +1459,7 @@ function viewSettings() {
       ${S.fields.map(f => `<div class="row" style="padding:3px 0"><input type="text" value="${esc(f.name)}" data-fname="${f.id}" class="sp"><button class="btn sm" data-fmove="${f.id}|-1">▲</button><button class="btn sm" data-fmove="${f.id}|1">▼</button><button class="chip ${f.inAn ? "on" : ""}" data-fan="${f.id}" title="Afficher ce champ (s'il est rempli) en bas de la fiche d'analyse de l'élève, écran et PDF" style="padding:5px 10px;white-space:nowrap">${f.inAn ? "✓ Analyse" : "Hors analyse"}</button><select data-ftype="${f.id}"><option value="text" ${f.type === "text" ? "selected" : ""}>Texte court</option><option value="long" ${f.type === "long" ? "selected" : ""}>Texte long</option><option value="tel" ${f.type === "tel" ? "selected" : ""}>Téléphone</option><option value="email" ${f.type === "email" ? "selected" : ""}>E-mail</option><option value="url" ${f.type === "url" ? "selected" : ""}>Lien (adresse web)</option></select><button class="btn sm dan" data-dfield="${f.id}">✕</button></div>`).join("")}
       <div class="row" style="margin-top:6px"><input type="text" id="add-field" placeholder="Nouveau champ" class="sp"><select id="add-ftype"><option value="text">Texte court</option><option value="long">Texte long</option><option value="tel">Téléphone</option><option value="email">E-mail</option><option value="url">Lien (adresse web)</option></select><button class="btn sm pri" data-add="field">Ajouter</button></div></div>
     <div class="card"><h2>🔢 Compteurs</h2>
-      <h3>🙂 Vie de classe</h3><p class="muted">Pour la note EMC automatique : choisis, pour chaque ligne, « consignes » ou « règles de vie », et un poids (une ligne plus grave peut compter 2 ou 3).</p>${itemList("vie")}${addRow("vie", "Nouvelle ligne de vie de classe")}
+      <h3>🙂 Vie de classe</h3><p class="muted">Le rattachement de chaque ligne aux notes EMC automatiques (consignes / règles de vie) et son poids se règlent dans 📕 Notes › Évaluations › Notes automatiques.</p>${itemList("vie")}${addRow("vie", "Nouvelle ligne de vie de classe")}
       <h3 style="margin-top:14px">🔊 Sons</h3>${itemList("sons")}${addRow("sons", "Nouveau son (ex. ou, ch, an…)")}
       <h3 style="margin-top:14px">✍️ Écriture</h3>${itemList("ecriture")}${addRow("ecriture", "Nouvelle ligne d'écriture")}
       <h3 style="margin-top:14px">📦 Matériel</h3>${itemList("matos")}${addRow("matos", "Nouvel objet (ex. ✏️ Crayon)")}</div>
@@ -1425,10 +1473,7 @@ function viewSettings() {
       <p class="muted">${Object.keys(S.journal).length} journée(s) enregistrée(s). À la fin du trimestre, exporte le cahier puis supprime les journées anciennes.</p>
       <div class="row"><button class="btn" data-act="exportJournalAll">⬇️ Exporter tout le cahier (texte)</button></div>
       <div class="row" style="margin-top:8px"><label>Supprimer les journées <b>avant le</b> <input type="date" id="jpurge" value="${today()}"></label><button class="btn dan" data-act="purgeJournal">🗑️ Supprimer</button></div></div>
-    <div class="card"><h2>🎯 Bornes des notes automatiques</h2>
-      <p class="muted">Les notes calculées à partir des compteurs vont de la <b>note minimale</b> (l'élève qui a le plus d'erreurs ou de remarques) à la <b>note maximale</b> (aucune erreur), sur 10. Par défaut : 3 et 10. Le <b>coef</b> pèse dans les moyennes (1 par défaut ; 0 = la note automatique ne compte pas).</p>
-      ${AUTO_KEYS.map(([k, l]) => { const [lo, hi] = boundsOf(k); return `<div class="row" style="margin-top:6px"><span class="sp">${l}</span><label>min <input type="number" min="0" max="10" step="0.5" inputmode="decimal" style="width:70px" value="${lo}" data-ab="${k}|min"></label><label>max <input type="number" min="0" max="10" step="0.5" inputmode="decimal" style="width:70px" value="${hi}" data-ab="${k}|max"></label><label>coef <input type="number" min="0" step="0.5" inputmode="decimal" style="width:70px" value="${((S.abounds || {})[k] || {}).coef ?? 1}" data-ab="${k}|coef"></label></div>`; }).join("")}
-      <div class="row" style="margin-top:8px"><button class="btn sm" data-act="abReset">Remettre les valeurs par défaut</button></div></div>
+    <div class="card"><h2>🤖 Notes automatiques</h2><p class="muted">Les réglages (compteurs pris en compte, bornes min/max, coefficients) se trouvent maintenant dans 📕 Notes › 📜 Évaluations › 🤖 Notes automatiques.</p><div class="row"><button class="btn" data-go="notes" data-nt2="1">Ouvrir les notes automatiques</button></div></div>
     <div class="card"><h2>💾 Données</h2><div class="row"><button class="btn pri" data-act="csv">Exporter le CSV unique</button><button class="btn" data-act="json">Sauvegarde complète (JSON)</button><button class="btn" data-act="import">Importer une sauvegarde…</button></div><input type="file" id="imp" accept=".json,application/json" style="display:none"></div>
     <div class="card"><h2>☁️ Synchronisation Supabase</h2>
       <p class="muted" id="cfgst">${st}</p>
@@ -1631,10 +1676,9 @@ const actions = {
   saveEval() {
     const e = evalFromDraft();
     if (!e.subjectId) return toast("Choisis une matière");
-    if (!Object.keys(e.grades).length) return toast("Saisis au moins une note");
     const over = Object.keys(e.grades).find(k => e.grades[k] > e.max); if (over) return toast("Note supérieure au barème : " + stud(over).name);
     const i = S.evals.findIndex(x => x.id === e.id); if (i >= 0) S.evals[i] = e; else S.evals.push(e);
-    save(); actions.clearDraft(); toast("Évaluation enregistrée ✓");
+    save(); actions.clearDraft(); toast(Object.keys(e.grades).length ? "Évaluation enregistrée ✓" : "Évaluation créée sans notes : renseigne-les dans 👤 Par élève ✓");
   },
   newWeek() {
     if (!confirm("Fin de semaine : les compteurs de VIE DE CLASSE et de MATÉRIEL de la semaine sont ajoutés au cumul du trimestre, puis remis à zéro.\n\n(Les compteurs de sons et d'écriture ne sont pas touchés : ils se cumulent sur tout le trimestre.)\n\nContinuer ?")) return;
@@ -1682,8 +1726,9 @@ const actions = {
 
 /* ---------- Événements ---------- */
 document.addEventListener("click", ev => {
-  const t = ev.target.closest("[data-go],[data-cat],[data-cv],[data-nav],[data-mdl],[data-jcp],[data-jcpgo],[data-jplus],[data-jmdel],[data-dec2],[data-decm2],[data-inc],[data-dec],[data-decm],[data-lend],[data-lend2],[data-inc2],[data-tbl],[data-nt],[data-edit],[data-deval],[data-an],[data-act],[data-ds],[data-di],[data-dsj],[data-dsb],[data-add],[data-addsb],[data-addcp],[data-dcp],[data-dfield],[data-bdet],[data-fab3],[data-ap],[data-apn],[data-apf],[data-apv],[data-tdim],[data-fmove],[data-fgo],[data-fan],[data-sort],[data-ptab],[data-ptog],[data-pmv],[data-pdel],[data-padd],[data-pab],[data-pev],[data-plink],[data-pall],[data-eexcl],[data-psv],[data-jadd],[data-jmv],[data-jdel],[data-jlink],[data-jldel],[data-jnav],[data-jday],[data-jsort],[data-sday],[data-jmode],[data-jcopy],[data-cmv],[data-cday],[data-cedit],[data-cdel],[data-cadd],[data-ccancel],[data-cimpdel],[data-pgo],[data-jgo],[data-fab2],[data-jcol],[data-jtcol],[data-top],[data-gofiche],[data-tdadd],[data-tdfold],[data-tddel],[data-tdmv],[data-tdtop],[data-tdnewbtn],[data-tdchk],[data-tdx],[data-tdclear],[data-tdsd],[data-tdst],[data-tdall],[data-tdmiss]");
+  const t = ev.target.closest("[data-go],[data-cat],[data-cv],[data-nav],[data-mdl],[data-hsec],[data-aview],[data-anoff],[data-nsel],[data-nstep],[data-jcp],[data-jcpgo],[data-jplus],[data-jmdel],[data-dec2],[data-decm2],[data-inc],[data-dec],[data-decm],[data-lend],[data-lend2],[data-inc2],[data-tbl],[data-nt],[data-edit],[data-deval],[data-an],[data-act],[data-ds],[data-di],[data-dsj],[data-dsb],[data-add],[data-addsb],[data-addcp],[data-dcp],[data-dfield],[data-bdet],[data-fab3],[data-ap],[data-apn],[data-apf],[data-apv],[data-tdim],[data-fmove],[data-fgo],[data-fan],[data-sort],[data-ptab],[data-ptog],[data-pmv],[data-pdel],[data-padd],[data-pab],[data-pev],[data-plink],[data-pall],[data-eexcl],[data-psv],[data-jadd],[data-jmv],[data-jdel],[data-jlink],[data-jldel],[data-jnav],[data-jday],[data-jsort],[data-sday],[data-jmode],[data-jcopy],[data-cmv],[data-cday],[data-cedit],[data-cdel],[data-cadd],[data-ccancel],[data-cimpdel],[data-pgo],[data-jgo],[data-fab2],[data-jcol],[data-jtcol],[data-top],[data-gofiche],[data-tdadd],[data-tdfold],[data-tddel],[data-tdmv],[data-tdtop],[data-tdnewbtn],[data-tdchk],[data-tdx],[data-tdclear],[data-tdsd],[data-tdst],[data-tdall],[data-tdmiss]");
   if (!t) return; const d = t.dataset;
+  if (d.nt2) { ntab = "histo"; hsec = "auto"; return go("notes"); }
   if (d.go) return go(d.go);
   if (d.cv) { cview[skey(page)] = d.cv; return render(); }
   if (d.nav) { const [m, k] = d.nav.split("|"), so = [...S.students].sort(byName), cur = m === "fiche" ? ficheSel : sel[m], i = so.findIndex(s => s.id === cur), nid = so[(i + (+k) + so.length) % so.length].id; if (m === "fiche") ficheSel = nid; else sel[m] = nid; return render(); }
@@ -1823,6 +1868,11 @@ document.addEventListener("click", ev => {
   if (d.jcpgo) { const r = jfind(jcp), dst = jcpd; if (!r || !/^\d{4}-\d{2}-\d{2}$/.test(dst || "")) return toast("Choisis un jour"); const nb = JSON.parse(JSON.stringify(r.b)); nb.id = uid(); delete nb.dailyOf; const arr = ((S.journal = S.journal || {})[dst] = S.journal[dst] || []); arr.push(nb); jSortDay(arr); jcp = ""; save(); render(); return toast("Bloc copié au " + dLong(dst) + " ✓"); }
   if (d.jplus) { const r = jfind(d.jplus); if (!r) return; (r.b.more = r.b.more || []).push({ subjectId: "", subId: "", compId: "" }); save(); return render(); }
   if (d.jmdel) { const [id, k] = d.jmdel.split("|"), r = jfind(id); if (!r || !r.b.more) return; r.b.more.splice(+k, 1); if (!r.b.more.length) delete r.b.more; save(); return render(); }
+  if (d.hsec) { hsec = d.hsec; aview = ""; return render(); }
+  if (d.aview !== undefined) { aview = d.aview; return render(); }
+  if (d.anoff) { const [m, id] = d.anoff.split("|"), it = S.items[m].find(i => i.id === id); if (it) { if (it.noAuto) delete it.noAuto; else it.noAuto = true; save(); invalidate(); render(); } return; }
+  if (d.nsel) { nsel = d.nsel; render(); return window.scrollTo(0, 0); }
+  if (d.nstep) { const L = [...S.students].sort(byName), i = L.findIndex(x => x.id === nsel); nsel = L[(i + +d.nstep + L.length) % L.length].id; render(); return window.scrollTo(0, 0); }
   if (d.mdl !== undefined) { mdl = d.mdl || null; return render(); }
   if (d.dfield) { const f = S.fields.find(x => x.id === d.dfield); if (!confirm(`Supprimer le champ « ${f.name} » ? Les informations déjà saisies dans ce champ seront perdues.`)) return; S.fields = S.fields.filter(x => x.id !== d.dfield); Object.values(S.info).forEach(o => delete o[d.dfield]); save(); return render(); }
   if (d.add) {
@@ -1885,6 +1935,9 @@ document.addEventListener("change", ev => {
   if (d.g) { const v = t.value.replace(",", "."); if (v === "") delete draft.grades[d.g]; else draft.grades[d.g] = parseFloat(v); saveDraft(); const p = $("#gp-" + d.g); if (p) p.innerHTML = pill(on10(draft.grades[d.g], draft.max)); updDraftMean(); return; }
   if (d.cl !== undefined) { if (d.cl === "sj") { clSj = t.value; clSb = clCp = ""; } else if (d.cl === "sb") { clSb = t.value; clCp = ""; } else clCp = t.value; if (clSj) sorts.cone = { k: "__a", d: "asc" }; else delete sorts.cone; return render(); }
   if (d.cone !== undefined) { classOne = t.value; if (classOne) sorts.cone = { k: "__a", d: "asc" }; else delete sorts.cone; return render(); }
+  if (d.nsj !== undefined) { nsj = t.value; return render(); }
+  if (d.nmiss !== undefined) { nmiss = t.checked; return render(); }
+  if (d.pg) { const e = S.evals.find(x => x.id === d.pg), v = t.value.replace(",", "."); if (!e) return; if (v === "") delete e.grades[nsel]; else { const n = parseFloat(v); if (!Number.isFinite(n) || n < 0) return; if (n > e.max) { toast("Note supérieure au barème (/" + e.max + ")"); t.value = e.grades[nsel] ?? ""; return; } e.grades[nsel] = n; } save(); invalidate(); const p = $("#pgp-" + d.pg); if (p) p.innerHTML = pill(on10(e.grades[nsel], e.max)); return; }
   if (d.hf !== undefined) { histF = t.value; histSb = ""; return render(); }
   if (d.hsb !== undefined) { histSb = t.value; return render(); }
   if (d.rn) { const s = stud(d.rn), v = t.value.trim(); if (v) { s.name = v; save(); } return render(); }
@@ -1918,7 +1971,7 @@ document.addEventListener("input", ev => {
 });
 
 setInterval(() => { if (!document.hidden && page === "journal" && jmode === "read" && jNowId(jdate) !== jLastNow) render(); }, 30000);   // la surbrillance suit l'heure
-document.addEventListener("keydown", ev => { if (ev.key === "Escape" && mdl) { mdl = null; render(); return; } if (ev.key === "Enter" && ev.target.dataset && ev.target.dataset.tdnew) { ev.preventDefault(); const b = document.querySelector(`[data-tdnewbtn="${ev.target.dataset.tdnew}"]`); b && b.click(); } });
+document.addEventListener("keydown", ev => { if (ev.key === "Escape" && (mdl || aview)) { mdl = null; aview = ""; render(); return; } if (ev.key === "Enter" && ev.target.dataset && ev.target.dataset.tdnew) { ev.preventDefault(); const b = document.querySelector(`[data-tdnewbtn="${ev.target.dataset.tdnew}"]`); b && b.click(); } });
 render(); updDraftMean();
 if (lockedNow()) showLock(); else if (cloudOn()) pull(false);
 </script>
