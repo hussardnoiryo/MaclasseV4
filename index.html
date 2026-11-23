@@ -213,9 +213,12 @@ function defaults() {
       { id: uid(), name: "EPS", subs: [] },
       { id: uid(), name: "Arts", subs: [] }
     ],
+    /* Listes de départ (pour une appli neuve : un testeur n'a rien à saisir). Elles ne servent QUE si aucune donnée n'est enregistrée sur l'appareil : jamais appliquées aux données existantes. */
     items: {
-      sons: [], ecriture: [], matos: [],
-      vie: [{ id: uid(), name: "Respect des consignes", emc: "consignes", w: 1 }, { id: uid(), name: "Respect des règles de vie", emc: "regles", w: 1 }]
+      sons: ["/a/:  a, à", "/aj/:  ail", "/ɑ̃/:  an, am, en, em", "/b/:  b, bb", "/d/:  d, dd", "/e/:  é, er, ez, et", "/ə/:  e", "/ɛ/:  ai, ei, è, ê, ai, ei, et", "/ɛ̃/:  in, im, ain, aim, ein, eim, yn, ym", "/ɛj/:  eil", "/f/:  f, ff, ph", "/g/:  g, gu, gg", "/i/:  i, î, ï, y", "/j/:  i, y, ill", "/jø/:  ieu", "/jɔ̃/:  ion", "/k/:  c, k, qu, q, ck, ch", "/l/:  l, ll", "/m/:  m, mm", "/n/:  n, nn", "/ɲ/:  gn", "/ŋ/:  ng, n(g)", "/o/:  au, eau, o, ô, au, eau", "/ø/:  (feu, nœud)", "/œ/:  eu, œu (peur, sœur)", "/œ̃/:  un, um", "/œj/:  euil", "/ɔ̃/:  on, om", "/p/:  p, pp", "/ʁ/:  r, rr", "/s/:  s, ss, c, ç, sc, t", "/ʃ/:  ch, sch, sh", "/t/:  t, tt", "/u/:  ou, où", "/uj/:  ouil", "/ɥ/:  u", "/v/:  v, vv, w", "/w/:  ou, w", "/wa/:  oi", "/wɛ̃/:  oin", "/y/:  u, û", "/z/:  z, s, x", "/ʒ/:  j, g"].map(name => ({ id: uid(), name })),
+      ecriture: ["Erreurs de copie", "Autocorrection", "Oublis de majuscule", "Segmentation des mots", "Cv/vc", "Oublis de mots", "Oublis de lettres", "Accords GN", "Accords GV (conjugaison)", "Regle MBP", "Homophones", "Chiffres/lettres en miroir"].map(name => ({ id: uid(), name })),
+      matos: ["🖍️ Feutre d’ardoise", "✏️ crayon a papier", "🖊️ stylo bleu", "🖋️ stylo vert", "🧽 Gomme", "✂️ ciseaux", "🧴 colle", "📏 règle"].map(name => ({ id: uid(), name })),
+      vie: ["Perroquets", "Points rouges", "Absences", "Retards", "Travail non fait", "Devoirs oubliés", "Signatures oubliées"].map(name => ({ id: uid(), name, emc: "", w: 1 }))
     },
     counts: {},   // counts[élève][module][item] = cette semaine
     term: {},     // cumul des semaines précédentes (même forme)
@@ -1289,11 +1292,12 @@ const isFlu = e => { const sj = subj(e.subjectId), cp = compOf(subOf(sj, e.subId
 const fluEvals = sid => evalsAll().filter(e => isFlu(e) && typeof e.grades[sid] === "number").sort((a, b) => (a.date || "").localeCompare(b.date || ""));
 function fluenceBlock(sid) {
   const L = fluEvals(sid); if (!L.length) return "";
-  const v = L.map(e => e.grades[sid]), last = v[v.length - 1], first = v[0], d = last - first, W = 150, H = 40, mx = Math.max(...v), mn = Math.min(...v), rg = Math.max(1, mx - mn);
-  const X = i => L.length === 1 ? W / 2 : 6 + i * (W - 12) / (L.length - 1), Y = x => H - 6 - (x - mn) / rg * (H - 12);
-  const spark = L.length > 1 ? `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;margin-top:4px"><polyline fill="none" stroke="#4361ee" stroke-width="2.5" stroke-linejoin="round" points="${v.map((x, i) => X(i).toFixed(1) + "," + Y(x).toFixed(1)).join(" ")}"/>${v.map((x, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(x).toFixed(1)}" r="${i === v.length - 1 ? 4 : 2.5}" fill="#4361ee"/>`).join("")}</svg>` : "";
+  const v = L.map(e => e.grades[sid]), last = v[v.length - 1], first = v[0], d = last - first;
   const cl = mean(counted().map(st => { const q = fluEvals(st.id); return q.length ? q[q.length - 1].grades[st.id] : null; }).filter(x => x !== null));
-  return `<div class="bflu bclick" data-mdl="flu|" title="Cliquer pour voir toutes les mesures"><h5>📖 Fluence <small>mots lus / minute</small></h5><div><span class="bfbig">${fmt(last)}</span> <small>mots/min</small></div><div class="bfs">${L.length > 1 ? `${d >= 0 ? "▲ +" : "▼ −"}${fmt(Math.abs(d))} depuis le ${frDate(L[0].date).slice(0, 5)} (${fmt(first)})` : "1re mesure"}${cl !== null ? ` · classe : ${fmt(cl)}` : ""}</div>${spark}</div>`;
+  /* évolution depuis la 1re mesure : rouge = baisse, orange = stagnation ou gain de 5 mots ou moins, vert = gain de plus de 5 mots */
+  const col = d < 0 ? ["#fde8e8", "#b42318"] : d <= 5 ? ["#fff1de", "#b54708"] : ["#e3f6ea", "#157f3b"];
+  const evo = L.length > 1 ? `<div style="margin-top:6px;display:inline-block;background:${col[0]};color:${col[1]};border-radius:10px;padding:3px 12px;font-weight:800;font-size:1.5rem;line-height:1.3">${d > 0 ? "▲ +" : d < 0 ? "▼ −" : "＝ "}${fmt(Math.abs(d))}</div><div class="bfs">depuis le ${frDate(L[0].date).slice(0, 5)} (${fmt(first)} mots/min)</div>` : `<div class="bfs" style="margin-top:6px">1re mesure</div>`;
+  return `<div class="bflu bclick" data-mdl="flu|" title="Cliquer pour voir toutes les mesures"><h5>📖 Fluence <small>mots lus / minute</small></h5><div><span class="bfbig">${fmt(last)}</span> <small>mots/min</small></div>${evo}${cl !== null ? `<div class="bfs">classe : ${fmt(cl)}</div>` : ""}</div>`;
 }
 function bilanEleve(sid) {
   const s = stud(sid), E = allEvals(), date = new Date().toLocaleDateString("fr-FR");
