@@ -69,7 +69,7 @@ th{font-size:.78rem;color:var(--muted);vertical-align:bottom}
 .fl{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .bil{font-size:15px;color:#222}.bil h1{font-size:1.9em}.bil small{color:#777;font-weight:500}
 .bhead{display:flex;justify-content:space-between;align-items:baseline;border-bottom:3px solid #3b5bdb;padding-bottom:5px;margin-bottom:14px}.bhead span{color:#666;font-size:.9em}
-.bhero{display:flex;gap:16px;align-items:center;margin-bottom:14px;flex-wrap:wrap}.bflu{margin-left:auto;background:#f4f6ff;border:1px solid #dfe4ff;border-radius:12px;padding:8px 12px;min-width:170px}.bflu h5{margin:0 0 2px;font-size:.9rem}.bflu h5 small{font-weight:400;color:#777}.bfbig{font-size:2.1rem;font-weight:800;color:#2b2d42;line-height:1}.bfs{font-size:.78rem;color:#555}.bring{width:7.5em;height:7.5em;flex:none}
+.bhero{display:flex;gap:16px;align-items:center;margin-bottom:14px;flex-wrap:wrap}.bflu{margin-left:auto;background:#f4f6ff;border:1px solid #dfe4ff;border-radius:12px;padding:8px 12px;min-width:170px;max-width:100%}.bflu h5{margin:0 0 2px;font-size:.9rem}.bflu h5 small{font-weight:400;color:#777}.bfbig{font-size:2.1rem;font-weight:800;color:#2b2d42;line-height:1}.bfs{font-size:.78rem;color:#555}.bfrow{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.bring{width:7.5em;height:7.5em;flex:none}
 .bhl{font-size:1.1em;display:flex;gap:8px;align-items:center}.bhs{color:#555;margin-top:4px}
 .bp{display:inline-block;min-width:3.6em;text-align:center;padding:.12em .65em;border-radius:999px;font-weight:700;background:#eef0f5;color:#666;white-space:nowrap}
 .bp.g{background:#e3f5ec;color:#1d7a50}.bp.o{background:#fdf0dc;color:#a8650c}.bp.r{background:#fde4e4;color:#b02a2a}
@@ -1158,7 +1158,7 @@ function notesEleve() {
   const L = [...S.students].sort(byName); if (!L.some(s => s.id === nsel)) nsel = L[0].id;
   const i = L.findIndex(s => s.id === nsel), st = L[i];
   const all = S.evals.filter(e => !e.auto), done = all.filter(e => typeof e.grades[nsel] === "number").length;
-  const list = all.filter(e => (!nsj || e.subjectId === nsj) && (!nmiss || typeof e.grades[nsel] !== "number")).sort((a, b) => b.date.localeCompare(a.date) || (a.label || "").localeCompare(b.label || "", "fr"));
+  const list = all.filter(e => (!nsj || e.subjectId === nsj) && (!nmiss || typeof e.grades[nsel] !== "number")).sort((a, b) => S.evals.indexOf(b) - S.evals.indexOf(a));   // du plus récemment créé au plus ancien
   const chips = `<div class="chips">${L.map(s => `<button class="chip ${s.id === nsel ? "on" : ""}" data-nsel="${s.id}">${esc(s.name)}</button>`).join("")}</div>`;
   const nav = `<div class="row" style="margin-top:10px"><button class="btn" data-nstep="-1">← Précédent</button><b class="sp" style="text-align:center;font-size:1.15rem">${esc(st.name)} <span class="muted" style="font-weight:400">${done} / ${all.length}</span></b><button class="btn pri" data-nstep="1">Suivant →</button></div>`;
   const flt = `<div class="row" style="margin-top:8px"><label>Matière : <select data-nsj><option value="">Toutes</option>${S.subjects.map(s => `<option value="${s.id}" ${s.id === nsj ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select></label><label class="chk"><input type="checkbox" data-nmiss ${nmiss ? "checked" : ""}> seulement les notes manquantes</label></div>`;
@@ -1296,8 +1296,8 @@ function fluenceBlock(sid) {
   const cl = mean(counted().map(st => { const q = fluEvals(st.id); return q.length ? q[q.length - 1].grades[st.id] : null; }).filter(x => x !== null));
   /* évolution depuis la 1re mesure : rouge = baisse, orange = stagnation ou gain de 5 mots ou moins, vert = gain de plus de 5 mots */
   const col = d < 0 ? ["#fde8e8", "#b42318"] : d <= 5 ? ["#fff1de", "#b54708"] : ["#e3f6ea", "#157f3b"];
-  const evo = L.length > 1 ? `<div style="margin-top:6px;display:inline-block;background:${col[0]};color:${col[1]};border-radius:10px;padding:3px 12px;font-weight:800;font-size:1.5rem;line-height:1.3">${d > 0 ? "▲ +" : d < 0 ? "▼ −" : "＝ "}${fmt(Math.abs(d))}</div><div class="bfs">depuis le ${frDate(L[0].date).slice(0, 5)} (${fmt(first)} mots/min)</div>` : `<div class="bfs" style="margin-top:6px">1re mesure</div>`;
-  return `<div class="bflu bclick" data-mdl="flu|" title="Cliquer pour voir toutes les mesures"><h5>📖 Fluence <small>mots lus / minute</small></h5><div><span class="bfbig">${fmt(last)}</span> <small>mots/min</small></div>${evo}${cl !== null ? `<div class="bfs">classe : ${fmt(cl)}</div>` : ""}</div>`;
+  const evo = L.length > 1 ? `<div><span style="display:inline-block;background:${col[0]};color:${col[1]};border-radius:10px;padding:2px 12px;font-weight:800;font-size:1.45rem;line-height:1.3">${d > 0 ? "▲ +" : d < 0 ? "▼ −" : "＝ "}${fmt(Math.abs(d))}</span><div class="bfs">depuis le ${frDate(L[0].date).slice(0, 5)} (${fmt(first)})</div></div>` : `<div class="bfs">1re mesure</div>`;
+  return `<div class="bflu bclick" data-mdl="flu|" title="Cliquer pour voir toutes les mesures"><h5>📖 Fluence <small>mots lus / minute</small></h5><div class="bfrow"><div><span class="bfbig">${fmt(last)}</span> <small>mots/min</small></div>${evo}${cl !== null ? `<div class="bfs">classe :<br><b style="font-size:1.1rem;color:#2b2d42">${fmt(cl)}</b></div>` : ""}</div></div>`;
 }
 function bilanEleve(sid) {
   const s = stud(sid), E = allEvals(), date = new Date().toLocaleDateString("fr-FR");
