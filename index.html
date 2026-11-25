@@ -256,7 +256,7 @@ function fix(d) {
   ["counts", "term", "lent"].forEach(k => d[k] = d[k] || {});
   if (d.miroir) Object.keys(d.miroir).forEach(k => { const v = d.miroir[k]; if (v && typeof v === "object") d.miroir[k] = Object.keys(v).join(", "); });
   d.subjects = d.subjects || b.subjects; d.evals = d.evals || [];
-  d.abounds = d.abounds || {}; d.todo = Array.isArray(d.todo) ? d.todo : []; d.journal = d.journal || {};  if (!Array.isArray(d.schoolDays) || !d.schoolDays.length) d.schoolDays = [1, 2, 3, 4, 5]; jMigrate(d); Object.values(d.journal).forEach(a => a.forEach(x => { delete x.dailyOf; })); delete d.jdaily; delete d.jskip; d.cal = d.cal || []; d.jtitles = d.jtitles || {}; d.fields = d.fields || b.fields; d.info = d.info || {};
+  d.abounds = d.abounds || {}; d.todo = Array.isArray(d.todo) ? d.todo : []; d.journal = d.journal || {}; d.jrec = Array.isArray(d.jrec) ? d.jrec : []; d.jrecSkip = d.jrecSkip || {};  if (!Array.isArray(d.schoolDays) || !d.schoolDays.length) d.schoolDays = [1, 2, 3, 4, 5]; jMigrate(d); Object.values(d.journal).forEach(a => a.forEach(x => { delete x.dailyOf; })); delete d.jdaily; delete d.jskip; d.cal = d.cal || []; d.jtitles = d.jtitles || {}; d.fields = d.fields || b.fields; d.info = d.info || {};
   if (!d.autoFields) { d.autoFields = true; d.fields.unshift({ id: uid(), name: "Date de naissance", type: "text", auto: "birth" }, { id: uid(), name: "Redoublant", type: "text", auto: "redo" }); }
   return d;
 }
@@ -628,7 +628,7 @@ function groupsOf() {
   }));
   return out;
 }
-function seriesEvals(g) { const ids = new Set(g.cs.map(c => c.id)); return evalsAll().filter(e => !e.auto && !e.excl && ids.has(e.compId)).sort((a, b) => a.date.localeCompare(b.date)); }
+function seriesEvals(g) { const ids = new Set(g.cs.map(c => c.id)); return evalsAll().filter(e => !e.auto && ids.has(e.compId)).sort((a, b) => a.date.localeCompare(b.date)); }
 function suiviOf(g, sid, E) {   // 1re et dernière évaluation de l'élève sur la série (notes /10)
   const l = (E || seriesEvals(g)).filter(e => typeof e.grades[sid] === "number");
   if (!l.length) return null;
@@ -940,10 +940,25 @@ function jSortDay(arr) {   // tri automatique par heure de début : un bloc sans
   const out = [...lead, ...groups.flat()]; arr.splice(0, arr.length, ...out);
 }
 const tFr = t => t ? t.replace(/^0/, "").replace(":", "h") : "";
-const jget = d => (S.journal || {})[d] || [];
+function jMat(d) {   // blocs récurrents : crée la copie du jour pour chaque série applicable (idempotent)
+  const R = S.jrec; if (!R || !R.length) return; const w = new Date(d + "T12:00:00").getDay(), sk = (S.jrecSkip || {})[d] || []; let arr = null, add = false;
+  R.forEach(t => { if (d < t.start || (t.end && d > t.end) || !t.days.includes(w) || sk.includes(t.rid)) return; arr = (S.journal = S.journal || {})[d] = S.journal[d] || []; if (arr.some(x => x.rid === t.rid)) return; const nb = JSON.parse(JSON.stringify(t.b)); nb.id = uid(); nb.rid = t.rid; arr.push(nb); add = true; });
+  if (add) jSortDay(arr);
+}
+const jget = d => { jMat(d); return (S.journal || {})[d] || []; };
+const JDN = { 1: "lun", 2: "mar", 3: "mer", 4: "jeu", 5: "ven", 6: "sam", 0: "dim" };
+let jrecOpen = "", jrecSel = [];
+const jrecTpl = rid => (S.jrec || []).find(t => t.rid === rid);
+const jrecLabel = rid => { const t = jrecTpl(rid); if (!t) return ""; const sd = S.schoolDays; return sd.every(x => t.days.includes(x)) && t.days.every(x => sd.includes(x)) ? "tous les jours de classe" : "chaque " + [1, 2, 3, 4, 5, 6, 0].filter(x => t.days.includes(x)).map(x => JDN[x]).join(", "); };
+function jrecPanel(b) {
+  if (jrecOpen !== b.id) return "";
+  return `<div class="card" style="margin:6px 0;background:var(--soft,#f6f3ff)"><b>🔁 Répéter ce bloc</b><div class="chips" style="margin:6px 0">${[1, 2, 3, 4, 5, 6, 0].filter(x => S.schoolDays.includes(x)).map(x => `<button class="chip ${jrecSel.includes(x) ? "on" : ""}" data-jrecd="${x}">${JDN[x]}</button>`).join("")}<button class="chip" data-jrecall="1">Tous les jours de classe</button></div>
+  <div class="row"><button class="btn pri" data-jrecok="${b.id}">${b.rid ? "Mettre à jour la série" : "Programmer"}</button>${b.rid ? `<button class="btn dan" data-jrecstop="${b.id}">Arrêter la série</button>` : ""}<button class="btn" data-jrec="${b.id}">Fermer</button></div>
+  <div class="muted" style="margin-top:4px">${b.rid ? "« Mettre à jour » recopie ce bloc (titre, texte, horaires…) sur tous les jours à venir de la série. « Arrêter » supprime la série à partir d'aujourd'hui (les jours passés restent)." : "Le bloc sera créé à partir de ce jour, aux jours cochés. Chaque jour reste ensuite modifiable séparément ; supprimer le bloc un jour ne retire que ce jour-là."}</div></div>`;
+}
 const jviews = d => jget(d);
 const jview = b => b;
-function jfind(id) { for (const d in (S.journal || {})) { const i = S.journal[d].findIndex(x => x.id === id); if (i >= 0) { const raw = S.journal[d][i]; return { arr: S.journal[d], i, raw, b: raw, d }; } } return null; }
+function jfind(id) { jMat(jdate); for (const d in (S.journal || {})) { const i = S.journal[d].findIndex(x => x.id === id); if (i >= 0) { const raw = S.journal[d][i]; return { arr: S.journal[d], i, raw, b: raw, d }; } } return null; }
 const jpath1 = b => { const sj = subj(b.subjectId), sb = subOf(sj, b.subId), cp = compOf(sb, b.compId); return [sj, sb, cp].filter(Boolean).map(x => x.name).join(" › "); };
 const jpath = b => [b, ...(b.more || [])].map(jpath1).filter(Boolean).join(" · ");   // matière › sous-matière › compétence, plus celles ajoutées avec « + » dans le même bloc
 const JPAL = ["", "#d6336c", "#e8590c", "#c98a00", "#2f9e44", "#1c7ed6", "#7048e8", "#c92a2a"];
@@ -956,15 +971,15 @@ function jNowId(d) {   // bloc en cours à l'heure actuelle (aujourd'hui seuleme
 }
 const jtime = b => b.from || b.to ? `${tFr(b.from)}${b.to ? " – " + tFr(b.to) : ""}` : "";
 function jblock(b, i, n) {
-  const mv = `<button class="btn sm" data-jcp="${b.id}" title="Copier ce bloc dans un autre jour">📋</button><button class="btn sm" data-jmv="${b.id}|-1" ${i === 0 ? "disabled" : ""} title="Monter">▲</button><button class="btn sm" data-jmv="${b.id}|1" ${i === n - 1 ? "disabled" : ""} title="Descendre">▼</button><button class="btn sm dan" data-jdel="${b.id}" title="Supprimer">✕</button>`;
+  const mv = `<button class="btn sm ${b.rid ? "pri" : ""}" data-jrec="${b.id}" title="${b.rid ? "Série : " + jrecLabel(b.rid) : "Répéter ce bloc (tous les jours / un jour par semaine)"}">🔁</button><button class="btn sm" data-jcp="${b.id}" title="Copier ce bloc dans un autre jour">📋</button><button class="btn sm" data-jmv="${b.id}|-1" ${i === 0 ? "disabled" : ""} title="Monter">▲</button><button class="btn sm" data-jmv="${b.id}|1" ${i === n - 1 ? "disabled" : ""} title="Descendre">▼</button><button class="btn sm dan" data-jdel="${b.id}" title="Supprimer">✕</button>`;
   const times = `<div class="jtime"><label>de<input type="time" data-jt="${b.id}|from" value="${esc(b.from || "")}"></label><label>durée (min)<input type="number" inputmode="numeric" min="0" step="5" data-jt="${b.id}|dur" value="${jDur(b)}" placeholder="min"></label><label>à<input type="time" data-jt="${b.id}|to" value="${esc(b.to || "")}"></label></div>`;
-  if (b.type === "sep") return `<div class="jsepb" id="jb-${b.id}">${times}<input type="text" class="sp" data-jf="${b.id}|label" value="${esc(b.label || "")}" placeholder="Récréation, pause déjeuner…" style="font-weight:700"><span class="row" style="gap:4px">${mv}</span></div>`;
+  if (b.type === "sep") return `<div class="jsepb" id="jb-${b.id}">${times}<input type="text" class="sp" data-jf="${b.id}|label" value="${esc(b.label || "")}" placeholder="Récréation, pause déjeuner…" style="font-weight:700"><span class="row" style="gap:4px">${mv}</span></div>${b.rid ? `<div class="muted" style="margin:0 0 4px 8px">🔁 ${jrecLabel(b.rid)}</div>` : ""}${jrecPanel(b)}`;
   const sj = subj(b.subjectId), sb = subOf(sj, b.subId);
   const opt = (arr, cur) => `<option value="">—</option>` + arr.map(x => `<option value="${x.id}" ${x.id === cur ? "selected" : ""}>${esc(x.name)}</option>`).join("");
   const extra = (b.more || []).map((m, k) => { const sj2 = subj(m.subjectId), sb2 = subOf(sj2, m.subId); return `<div class="row" style="margin-top:6px"><select data-jsel2="${b.id}|${k}|subjectId" class="sp" title="Matière">${opt(S.subjects, m.subjectId)}</select><select data-jsel2="${b.id}|${k}|subId" class="sp" ${sj2 ? "" : "disabled"} title="Sous-matière">${opt(sj2 ? sj2.subs : [], m.subId)}</select><select data-jsel2="${b.id}|${k}|compId" class="sp" ${sb2 ? "" : "disabled"} title="Compétence">${opt(sb2 ? (sb2.comps || []) : [], m.compId)}</select><button class="btn sm dan" data-jmdel="${b.id}|${k}" title="Retirer cette ligne">✕</button></div>`; }).join("");
   const links = (b.links || []).map((l, k) => `<span class="jlk"><a href="${esc(fixUrl(l.url))}" target="_blank" rel="noopener">${l.print ? "🖨️" : "🔗"} ${esc(l.label || l.url)}</a><button class="btn sm dan" data-jldel="${b.id}|${k}" title="Retirer ce lien">✕</button></span>`).join("");
   return `<div class="jb" id="jb-${b.id}">${times}<div class="jmain">
-    <div class="row"><input type="text" class="sp" data-jf="${b.id}|title" value="${esc(b.title || "")}" placeholder="Titre (ex. Lecture – Le loup et les 7 chevreaux)" style="font-weight:700${b.color ? ";color:" + b.color : ""}"><span class="row" style="gap:4px">${mv}</span></div>
+    <div class="row"><input type="text" class="sp" data-jf="${b.id}|title" value="${esc(b.title || "")}" placeholder="Titre (ex. Lecture – Le loup et les 7 chevreaux)" style="font-weight:700${b.color ? ";color:" + b.color : ""}"><span class="row" style="gap:4px">${mv}</span></div>${b.rid ? `<div class="muted" style="margin-top:3px">🔁 ${jrecLabel(b.rid)}</div>` : ""}${jrecPanel(b)}
     <div class="row" style="margin-top:6px;gap:7px"><span class="muted">🎨 Couleur du titre</span>${JPAL.map(c => `<button class="swc ${(b.color || "") === c ? "on" : ""}" data-jcol="${b.id}|${c}" style="background:${c || "#fff"}" title="${c ? "Colorer le titre" : "Couleur par défaut"}">${c ? "" : "∅"}</button>`).join("")}</div>
     <div class="row" style="margin-top:6px"><select data-jsel="${b.id}|subjectId" class="sp" title="Matière (issue des Progressions)">${opt(S.subjects, b.subjectId)}</select>
       <select data-jsel="${b.id}|subId" class="sp" ${sj ? "" : "disabled"} title="Sous-matière">${opt(sj ? sj.subs : [], b.subId)}</select>
@@ -1198,14 +1213,14 @@ function suiviCard() {   // « Suivi annuel » : en bas de l'analyse, à l'écra
     const sorted = [...S.students].sort(byName);
     body = sel.map(g => { const E = seriesEvals(g), c = suiviClass(g);
       if (!E.length) return `<h3>${esc(g.name)} <small class="muted">${esc(g.sj.name)} › ${esc(g.sb.name)}</small></h3><p class="muted">Aucune évaluation rattachée pour le moment (choisis la compétence dans 📕 Notes).</p>`;
-      const head = all ? E.map(e => `<th>${esc(e.label || "éval.")}<br>${dt(e.date)}</th>`).join("") : "<th>1re évaluation</th><th>Dernière</th>";
+      const head = all ? E.map(e => `<th>${esc(e.label || "éval.")}${e.excl ? " ⛔" : ""}<br>${dt(e.date)}</th>`).join("") : "<th>1re évaluation</th><th>Dernière</th>";
       const row = st => { const r = suiviOf(g, st.id, E); if (!r) return `<td colspan="${all ? E.length + 1 : 3}" class="muted">–</td>`;
         return (all ? E.map(e => `<td>${pc(on10(e.grades[st.id], e.max))}</td>`).join("") : `<td>${pc(r.v1)} ${dt(r.d1)}</td><td>${r.v2 !== null ? `${pc(r.v2)} ${dt(r.d2)}` : "–"}</td>`) + `<td>${dlt(r.delta)}</td>`; };
       const last = `<tr class="clrow"><td><b>Classe</b></td>${all ? E.map(e => `<td>${pc(mean(counted().map(st => on10(e.grades[st.id], e.max))))}</td>`).join("") : `<td>${pc(c.v1)}</td><td>${pc(c.v2)}</td>`}<td>${dlt(c.delta)}</td></tr>`;
       return `<h3>${esc(g.name)} <small class="muted">${esc(g.sj.name)} › ${esc(g.sb.name)} · ${periodsLabel(g)}</small></h3><div class="scroll"><table class="ctab"><thead><tr><th>Élève</th>${head}<th>Évolution</th></tr></thead><tbody>${sorted.map(st => `<tr><td>${nm(st)}</td>${row(st)}</tr>`).join("")}${last}</tbody></table></div>`; }).join("");
   }
   return `<div class="card" id="suivi-an"><div class="row"><h2 class="sp" style="margin:0">📈 Suivi annuel${sid ? " · " + esc(stud(sid).name) : " de la classe"}</h2><button class="chip ${pick ? "on" : ""}" data-act="suiviPick">⚙️ Compétences suivies (${sel.length})</button></div>${picker}
-    <div class="chips" style="margin:8px 0"><button class="chip ${!all ? "on" : ""}" data-act="suiviAll" data-v="0">1re et dernière note</button><button class="chip ${all ? "on" : ""}" data-act="suiviAll" data-v="1">Toutes les notes</button></div>${body}<p class="muted" style="margin-top:8px">Ce bloc n'apparaît pas sur les PDF. Seules les compétences présentes sur plusieurs périodes (ex. P1 P2 P3) peuvent être suivies.</p></div>`;
+    <div class="chips" style="margin:8px 0"><button class="chip ${!all ? "on" : ""}" data-act="suiviAll" data-v="0">1re et dernière note</button><button class="chip ${all ? "on" : ""}" data-act="suiviAll" data-v="1">Toutes les notes</button></div>${body}<p class="muted" style="margin-top:8px">⛔ = évaluation exclue des moyennes, mais conservée ici pour suivre la progression. Ce bloc n'apparaît pas sur les PDF. Seules les compétences présentes sur plusieurs périodes (ex. P1 P2 P3) peuvent être suivies.</p></div>`;
 }
 function modTotals(sid) {   // total par module et par ligne
   const r = {};
@@ -1386,15 +1401,20 @@ function mdlHtml(sid) {
 function studentHtml(sid) {
   return `<div class="card">${bilanEleve(sid)}</div><div class="card"><h3>Synthèse écrite</h3><ul class="synth">${synth(sid).map(x => `<li>${x}</li>`).join("")}</ul>${autoWarn.length ? autoNote() : ""}</div>${mdlHtml(sid)}`;
 }
+let anCat = "notes";   // catégorie affichée dans l'analyse de la classe
+function classCounters(m) {   // tableau d'une catégorie de compteurs : une colonne par ligne (item) + total
+  const its = S.items[m]; if (!its.length) return `<p class="muted">Aucune ligne dans « ${MODS[m]} ».</p>`;
+  const sorted = [...S.students].sort(byName), rows = sortRows(sorted, "cnt" + m, (st, k) => k === "__n" ? st.name : k === "__t" ? its.reduce((a, it) => a + tot(st.id, m, it.id), 0) : tot(st.id, m, k));
+  const sum = id => S.students.reduce((a, st) => a + tot(st.id, m, id), 0);
+  return `<div class="scroll"><table><thead><tr>${sth("cnt" + m, "__n", "t", "Élève")}${its.map(it => sth("cnt" + m, it.id, "n", esc(it.name))).join("")}${its.length > 1 ? sth("cnt" + m, "__t", "n", "Total") : ""}</tr></thead><tbody>${rows.map(st => `<tr><td>${nm(st)}</td>${its.map(it => `<td>${tot(st.id, m, it.id)}</td>`).join("")}${its.length > 1 ? `<td><b>${its.reduce((a, it) => a + tot(st.id, m, it.id), 0)}</b></td>` : ""}</tr>`).join("")}<tr class="clrow"><td><b>Classe</b></td>${its.map(it => `<td><b>${sum(it.id)}</b></td>`).join("")}${its.length > 1 ? `<td><b>${its.reduce((a, it) => a + sum(it.id), 0)}</b></td>` : ""}</tr></tbody></table></div>`;
+}
 function classHtml() {
-  const sorted = [...S.students].sort(byName);
-  const hasComps = S.subjects.some(sj => sj.subs.some(sb => (sb.comps || []).length));
-  const notes = S.subjects.length ? classPicker() : classNotesTable(false);
-  const cnt3 = ["vie", "sons", "ecriture"].filter(m => S.items[m].length);
-  const csorted = sortRows(sorted, "cnt", (s, k) => k === "__n" ? s.name : S.items[k].reduce((a, it) => a + tot(s.id, k, it.id), 0));
-  const cc = cnt3.length ? `<div class="scroll"><table><thead><tr>${sth("cnt", "__n", "t", "Élève")}${cnt3.map(m => sth("cnt", m, "n", MODS[m])).join("")}</tr></thead><tbody>${csorted.map(s => `<tr><td>${nm(s)}</td>${cnt3.map(m => `<td>${S.items[m].reduce((a, it) => a + tot(s.id, m, it.id), 0)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<p class="muted">Aucun compteur.</p>`;
-  const lent = Object.keys(S.lent).filter(k => S.lent[k]).map(k => { const [sid, iid] = k.split("::"); const st = stud(sid), it = S.items.matos.find(i => i.id === iid); return st && it ? `${esc(st.name)} : ${esc(it.name)}` : null; }).filter(Boolean);
-  return `<div class="card"><div class="row"><h2 class="sp" style="margin:0">Notes de la classe</h2></div><p class="muted" style="margin:4px 0 8px">Moyennes sur 10 par matière, sous-matière (Français, Mathématiques, EMC) et élève. Les élèves « hors moyenne » ne comptent pas dans la ligne Classe.</p>${notes}${autoNote()}</div><div class="card"><h2>Compteurs (cumul du trimestre)</h2>${cc}</div>${lent.length ? `<div class="card"><h3>📦 Matériel actuellement prêté</h3><p>${lent.join(" · ")}</p></div>` : ""}`;
+  const menu = `<div class="chips" style="margin-bottom:10px">${[["notes", "📕 Notes"], ["vie", "🌈 Vie de classe"], ["sons", "🔊 Sons"], ["ecriture", "✏️ Écriture"], ["matos", "📦 Matériel"]].map(([k, l]) => `<button class="chip ${anCat === k ? "on" : ""}" data-ancat="${k}">${l}</button>`).join("")}</div>`;
+  if (anCat === "notes" || !MODS[anCat]) { const notes = S.subjects.length ? classPicker() : classNotesTable(false);
+    return menu + `<div class="card"><div class="row"><h2 class="sp" style="margin:0">Notes de la classe</h2></div><p class="muted" style="margin:4px 0 8px">Moyennes sur 10 par matière, sous-matière (Français, Mathématiques, EMC) et élève. Les élèves « hors moyenne » ne comptent pas dans la ligne Classe.</p>${notes}${autoNote()}</div>`; }
+  if (anCat === "matos") { const lent = Object.keys(S.lent).filter(k => S.lent[k]).map(k => { const [sid, iid] = k.split("::"); const st = stud(sid), it = S.items.matos.find(i => i.id === iid); return st && it ? `${esc(st.name)} : ${esc(it.name)}` : null; }).filter(Boolean);
+    return menu + `<div class="card"><h2>Matériel (cumul du trimestre)</h2>${classCounters("matos")}</div>${lent.length ? `<div class="card"><h3>📦 Matériel actuellement prêté</h3><p>${lent.join(" · ")}</p></div>` : `<div class="card muted">Aucun matériel actuellement prêté.</div>`}`; }
+  return menu + `<div class="card"><h2>${MODS[anCat]} (cumul du trimestre)</h2>${classCounters(anCat)}</div>`;
 }
 
 /* Impression : une seule page A4 */
@@ -1744,7 +1764,7 @@ const actions = {
 
 /* ---------- Événements ---------- */
 document.addEventListener("click", ev => {
-  const t = ev.target.closest("[data-go],[data-cat],[data-cv],[data-nav],[data-mdl],[data-hsec],[data-aview],[data-anoff],[data-nsel],[data-nstep],[data-jcp],[data-jprinturl],[data-jcpgo],[data-jplus],[data-jmdel],[data-dec2],[data-decm2],[data-inc],[data-dec],[data-decm],[data-lend],[data-lend2],[data-inc2],[data-tbl],[data-nt],[data-edit],[data-deval],[data-an],[data-act],[data-ds],[data-di],[data-dsj],[data-dsb],[data-add],[data-addsb],[data-addcp],[data-dcp],[data-dfield],[data-bdet],[data-fab3],[data-ap],[data-apn],[data-apf],[data-apv],[data-tdim],[data-fmove],[data-fgo],[data-fan],[data-sort],[data-ptab],[data-ptog],[data-pmv],[data-pdel],[data-padd],[data-pab],[data-pev],[data-plink],[data-pall],[data-eexcl],[data-psv],[data-jadd],[data-jmv],[data-jdel],[data-jlink],[data-jldel],[data-jnav],[data-jday],[data-jsort],[data-sday],[data-jmode],[data-jcopy],[data-cmv],[data-cday],[data-cedit],[data-cdel],[data-cadd],[data-ccancel],[data-cimpdel],[data-pgo],[data-jgo],[data-fab2],[data-jcol],[data-jtcol],[data-top],[data-gofiche],[data-tdadd],[data-tdfold],[data-tddel],[data-tdmv],[data-tdtop],[data-tdnewbtn],[data-tdchk],[data-tdx],[data-tdclear],[data-tdsd],[data-tdst],[data-tdall],[data-tdmiss]");
+  const t = ev.target.closest("[data-go],[data-ancat],[data-cat],[data-cv],[data-nav],[data-mdl],[data-hsec],[data-aview],[data-anoff],[data-nsel],[data-nstep],[data-jcp],[data-jrec],[data-jrecd],[data-jrecall],[data-jrecok],[data-jrecstop],[data-jprinturl],[data-jcpgo],[data-jplus],[data-jmdel],[data-dec2],[data-decm2],[data-inc],[data-dec],[data-decm],[data-lend],[data-lend2],[data-inc2],[data-tbl],[data-nt],[data-edit],[data-deval],[data-an],[data-act],[data-ds],[data-di],[data-dsj],[data-dsb],[data-add],[data-addsb],[data-addcp],[data-dcp],[data-dfield],[data-bdet],[data-fab3],[data-ap],[data-apn],[data-apf],[data-apv],[data-tdim],[data-fmove],[data-fgo],[data-fan],[data-sort],[data-ptab],[data-ptog],[data-pmv],[data-pdel],[data-padd],[data-pab],[data-pev],[data-plink],[data-pall],[data-eexcl],[data-psv],[data-jadd],[data-jmv],[data-jdel],[data-jlink],[data-jldel],[data-jnav],[data-jday],[data-jsort],[data-sday],[data-jmode],[data-jcopy],[data-cmv],[data-cday],[data-cedit],[data-cdel],[data-cadd],[data-ccancel],[data-cimpdel],[data-pgo],[data-jgo],[data-fab2],[data-jcol],[data-jtcol],[data-top],[data-gofiche],[data-tdadd],[data-tdfold],[data-tddel],[data-tdmv],[data-tdtop],[data-tdnewbtn],[data-tdchk],[data-tdx],[data-tdclear],[data-tdsd],[data-tdst],[data-tdall],[data-tdmiss]");
   if (!t) return; const d = t.dataset;
   if (d.nt2) { ntab = "histo"; hsec = "auto"; return go("notes"); }
   if (d.go) return go(d.go);
@@ -1759,6 +1779,7 @@ document.addEventListener("click", ev => {
   if (d.lend) { const k = sel.matos + "::" + d.lend; if (S.lent[k]) delete S.lent[k]; else { S.lent[k] = true; bump(sel.matos, "matos", d.lend, 1); } save(); return render(); }
   if (d.lend2) { const [s, it] = d.lend2.split("|"), k = s + "::" + it; if (S.lent[k]) delete S.lent[k]; else { S.lent[k] = true; bump(s, "matos", it, 1); } save(); return render(); }
   if (d.nt) { ntab = d.nt; return render(); }
+  if (d.ancat) { anCat = d.ancat; return render(); }
   if (d.an) { anSel = d.an; mdl = null; return render(); }
   if (d.edit) { const e = S.evals.find(x => x.id === d.edit); if (e) { draft = { subjectId: e.subjectId, subId: e.subId, compId: e.compId || "", per: e.per || "", label: e.label, date: e.date, max: e.max, coef: e.coef ?? 1, excl: !!e.excl, grades: { ...e.grades }, editId: e.id }; saveDraft(); ntab = "saisie"; render(); } return; }
   if (d.deval) { if (confirm("Supprimer cette évaluation ?")) { S.evals = S.evals.filter(x => x.id !== d.deval); save(); render(); } return; }
@@ -1834,7 +1855,7 @@ document.addEventListener("click", ev => {
   if (d.jcopy !== undefined) {
     const prev = jPrevDays(), src = prev.includes(jsrc) ? jsrc : prev[0]; if (!src) return toast("Aucune journée à copier");
     if (jget(jdate).length && !confirm("Cette journée contient déjà des blocs. Les remplacer par la copie du " + frDate(src) + " ?")) return;
-    S.journal[jdate] = JSON.parse(JSON.stringify(S.journal[src])).map(b => { b.id = uid(); delete b.dailyOf; if (!jwt && b.type !== "sep") { b.text = ""; b.links = []; } return b; });
+    S.journal[jdate] = JSON.parse(JSON.stringify(S.journal[src])).map(b => { b.id = uid(); delete b.dailyOf; delete b.rid; if (!jwt && b.type !== "sep") { b.text = ""; b.links = []; } return b; });
     save(); render(); return toast("Journée copiée : modifie maintenant ce que tu veux ✓"); }
   if (d.jadd) {
     const [kind, label, after] = d.jadd.split("|"), arr = ((S.journal = S.journal || {})[jdate] = S.journal[jdate] || []);
@@ -1844,8 +1865,22 @@ document.addEventListener("click", ev => {
     const b = { id: uid(), type: kind === "sep" ? "sep" : "bloc", from, to: nx || tAdd(from, dur) };
     if (kind === "sep") b.label = label || ""; else { b.title = ""; b.text = ""; b.links = []; }
     arr.splice(pos, 0, b); save(); render(); setTimeout(() => { const e = document.querySelector(`[data-jf="${b.id}|${kind === "sep" ? "label" : "title"}"]`); e && e.scrollIntoView({ block: "center" }); e && e.focus(); }, 30); return; }
+  if (d.jrec !== undefined) { if (jrecOpen === d.jrec) jrecOpen = ""; else { jrecOpen = d.jrec; const r = jfind(d.jrec), t = r && r.b.rid && jrecTpl(r.b.rid); jrecSel = t ? [...t.days] : [new Date(jdate + "T12:00:00").getDay()]; } return render(); }
+  if (d.jrecd !== undefined) { const w = +d.jrecd; jrecSel = jrecSel.includes(w) ? jrecSel.filter(x => x !== w) : [...jrecSel, w]; return render(); }
+  if (d.jrecall) { jrecSel = [...S.schoolDays]; return render(); }
+  if (d.jrecok) { const r = jfind(d.jrecok); if (!r) return; if (!jrecSel.length) return toast("Coche au moins un jour");
+    const snap = JSON.parse(JSON.stringify(r.b)); delete snap.id; delete snap.rid; S.jrec = S.jrec || [];
+    if (r.b.rid && jrecTpl(r.b.rid)) { const t = jrecTpl(r.b.rid); t.days = [...jrecSel]; t.b = snap;
+      Object.keys(S.journal).forEach(day => { if (day < jdate) return; const w = new Date(day + "T12:00:00").getDay(); S.journal[day] = S.journal[day].filter(x => x.rid !== t.rid || (day === jdate && x.id === r.b.id) || t.days.includes(w)); S.journal[day].forEach((x, i) => { if (x.rid === t.rid && x.id !== r.b.id) S.journal[day][i] = Object.assign({}, snap, { id: x.id, rid: t.rid }); }); });
+      S.jrecSkip = S.jrecSkip || {}; Object.keys(S.jrecSkip).forEach(day => { if (day >= jdate) S.jrecSkip[day] = S.jrecSkip[day].filter(x => x !== t.rid); }); }
+    else { const rid = uid(); r.b.rid = rid; S.jrec.push({ rid, start: jdate, days: [...jrecSel], b: snap }); }
+    jrecOpen = ""; save(); render(); return toast("Série programmée ✓ (" + jrecLabel(r.b.rid) + ")"); }
+  if (d.jrecstop) { const r = jfind(d.jrecstop); if (!r || !r.b.rid) return; if (!confirm("Arrêter la série à partir d'aujourd'hui ? Les blocs de la série seront supprimés de ce jour et des jours suivants.")) return; const rid = r.b.rid, t = jrecTpl(rid);
+    Object.keys(S.journal).forEach(day => { if (day >= jdate) S.journal[day] = S.journal[day].filter(x => x.rid !== rid); });
+    if (t) { t.end = dAdd(jdate, -1); if (t.end < t.start) S.jrec = S.jrec.filter(x => x.rid !== rid); }
+    jrecOpen = ""; save(); return render(); }
   if (d.jmv) { const [id, k] = d.jmv.split("|"), r = jfind(id); if (!r) return; const j = r.i + +k; if (j < 0 || j >= r.arr.length) return; [r.arr[r.i], r.arr[j]] = [r.arr[j], r.arr[r.i]]; save(); return render(); }
-  if (d.jdel) { const r = jfind(d.jdel); if (!r) return; if ((r.b.text || r.b.title || (r.b.links || []).length) && !confirm("Supprimer ce bloc ?")) return; r.arr.splice(r.i, 1); save(); return render(); }
+  if (d.jdel) { const r = jfind(d.jdel); if (!r) return; if ((r.b.text || r.b.title || (r.b.links || []).length) && !confirm(r.b.rid ? "Supprimer ce bloc pour ce jour seulement ? (la série continue les autres jours)" : "Supprimer ce bloc ?")) return; if (r.b.rid) { S.jrecSkip = S.jrecSkip || {}; (S.jrecSkip[r.d] = S.jrecSkip[r.d] || []).push(r.b.rid); } r.arr.splice(r.i, 1); save(); return render(); }
   if (d.jsort !== undefined) { const a = (S.journal || {})[jdate]; if (!a) return; const k = a.map((x, i) => [x, i]).sort((p, q) => (jview(p[0]).from || "99:99").localeCompare(jview(q[0]).from || "99:99") || p[1] - q[1]).map(x => x[0]); a.splice(0, a.length, ...k); save(); return render(); }
   if (d.jprinturl) { let u = prompt("Adresse de ton dossier d'impression dans le cloud (laisse vide pour retirer le lien) :", S.printUrl || ""); if (u === null) return; u = u.trim();
     if (u) { if (!/^[a-z][a-z0-9+.-]*:/i.test(u)) u = "https://" + u; if (!/^https?:\/\//i.test(u)) return toast("Le lien doit commencer par http ou https"); S.printUrl = u; } else delete S.printUrl;
@@ -1886,7 +1921,7 @@ document.addEventListener("click", ev => {
   if (d.fmove) { const [id, k] = d.fmove.split("|"), i = S.fields.findIndex(f => f.id === id), j = i + (+k); if (i < 0 || j < 0 || j >= S.fields.length) return; [S.fields[i], S.fields[j]] = [S.fields[j], S.fields[i]]; save(); return render(); }
   if (d.fan) { const f = S.fields.find(x => x.id === d.fan); f.inAn = !f.inAn; save(); return render(); }
   if (d.jcp !== undefined) { jcp = d.jcp; if (jcp) { let n = dAdd(jdate, 1); for (let k = 0; k < 7 && !S.schoolDays.includes(new Date(n + "T12:00:00").getDay()); k++) n = dAdd(n, 1); jcpd = n; } return render(); }
-  if (d.jcpgo) { const r = jfind(jcp), dst = jcpd; if (!r || !/^\d{4}-\d{2}-\d{2}$/.test(dst || "")) return toast("Choisis un jour"); const nb = JSON.parse(JSON.stringify(r.b)); nb.id = uid(); delete nb.dailyOf; const arr = ((S.journal = S.journal || {})[dst] = S.journal[dst] || []); arr.push(nb); jSortDay(arr); jcp = ""; save(); render(); return toast("Bloc copié au " + dLong(dst) + " ✓"); }
+  if (d.jcpgo) { const r = jfind(jcp), dst = jcpd; if (!r || !/^\d{4}-\d{2}-\d{2}$/.test(dst || "")) return toast("Choisis un jour"); const nb = JSON.parse(JSON.stringify(r.b)); nb.id = uid(); delete nb.dailyOf; delete nb.rid; const arr = ((S.journal = S.journal || {})[dst] = S.journal[dst] || []); arr.push(nb); jSortDay(arr); jcp = ""; save(); render(); return toast("Bloc copié au " + dLong(dst) + " ✓"); }
   if (d.jplus) { const r = jfind(d.jplus); if (!r) return; (r.b.more = r.b.more || []).push({ subjectId: "", subId: "", compId: "" }); save(); return render(); }
   if (d.jmdel) { const [id, k] = d.jmdel.split("|"), r = jfind(id); if (!r || !r.b.more) return; r.b.more.splice(+k, 1); if (!r.b.more.length) delete r.b.more; save(); return render(); }
   if (d.hsec) { hsec = d.hsec; aview = ""; return render(); }
