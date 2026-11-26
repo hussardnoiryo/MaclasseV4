@@ -17,6 +17,7 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
 #fab2{position:fixed;right:14px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + var(--kb,0px) + 62px);z-index:20;border:0;border-radius:999px;padding:14px 20px;background:#f08c00;color:#fff;font-weight:800;box-shadow:0 6px 18px rgba(120,70,0,.35);cursor:pointer}
 #fab3{position:fixed;right:14px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + var(--kb,0px) + 62px);z-index:20;border:2px solid #fff;border-radius:999px;padding:12px 18px;background:#0ca678;color:#fff;font-weight:800;box-shadow:0 6px 18px rgba(0,60,40,.35);cursor:pointer;display:none}
 @media print{#fab2,#fab3{display:none!important}}
+#fabw{position:fixed;left:14px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + var(--kb,0px));z-index:20;border-radius:999px;width:52px;height:52px;font-size:1.5rem;background:#f08c00;color:#fff;border:2px solid #fff;box-shadow:0 6px 18px rgba(0,0,0,.4);cursor:pointer;padding:0}@media print{#fabw{display:none!important}}
 #fab{position:fixed;right:14px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + var(--kb,0px));z-index:20;border-radius:999px;padding:14px 20px;background:#2b2d42;color:#fff;border:2px solid #fff;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.4);cursor:pointer}
 @media print{#fab{display:none}}
 .idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}.idx button{display:flex;flex-direction:column;align-items:center;gap:6px;border:2px solid transparent;border-radius:18px;background:#fff;padding:18px 8px;cursor:pointer;font-weight:700;color:var(--ink,#2b2f4a);box-shadow:0 2px 8px rgba(60,70,100,.1)}.idx button b{font-size:2.3rem;line-height:1}.idx button.on{background:var(--blue-l);border-color:var(--blue);color:#2a45b0}
@@ -122,11 +123,11 @@ textarea.tdta{resize:none;overflow:hidden;min-height:38px;line-height:1.3;font-f
 .calg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.calh{text-align:center;font-weight:700;font-size:.8rem;color:#667}.calc{min-height:78px;border:1.5px solid #e1e5ee;border-radius:9px;padding:3px 4px;cursor:pointer;background:#fff;overflow:hidden}.calc.out{opacity:.45}.calc.today{border-color:#3b5bdb}.calc.sel{box-shadow:0 0 0 2px #3b5bdb inset}.cnum{font-weight:800;font-size:.85rem}.cch{font-size:.68rem;border-radius:5px;padding:1px 4px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cmore{font-size:.68rem;color:#667}
 @media(max-width:640px){.calc{min-height:54px}.cch{font-size:.6rem}}
 :root{--cursive:"Snell Roundhand","Segoe Script","Bradley Hand","Apple Chancery","Brush Script MT","Lucida Handwriting",cursive}.jbig{text-align:center;font-family:var(--cursive);font-size:2rem;font-weight:700;color:#2a45b0;line-height:1.25;margin:6px 8px 10px}#sheetIn .jh1{display:grid;grid-template-columns:1fr auto 1fr;align-items:baseline;gap:14px;white-space:nowrap;overflow:hidden}#sheetIn .jtt{font-family:var(--cursive);font-size:26px;line-height:1.1;font-weight:700;color:#2a45b0;overflow:hidden;text-overflow:ellipsis}#sheetIn .jbig{text-align:center;font-family:var(--cursive);font-size:26px;font-weight:700;color:#2a45b0;margin:4px 0 12px}
-.plk{text-decoration:none;font-weight:700;color:#3b5bdb}.pbts{display:flex;gap:6px;flex-wrap:wrap}.pgrp{display:inline-flex;gap:4px;align-items:center;padding:2px 5px;border-radius:9px;border:1px solid #e1e5ee;background:#fff}.pgrp.ab{background:#fde8e8;border-color:#e9a3a3}.pgrp.ev{background:#e3f5ec;border-color:#8cc9a8}.pgrp b{font-size:.8rem}
+.plk{text-decoration:none;font-weight:700;color:#3b5bdb}.pbts{display:flex;gap:6px;flex-wrap:wrap}.pgrp{display:inline-flex;gap:4px;align-items:center;padding:2px 5px;border-radius:9px;border:1px solid #e1e5ee;background:#fff}.pgrp.ab{background:#fde8e8;border-color:#e9a3a3}.pgrp.ev{background:#e3f5ec;border-color:#8cc9a8}.pgrp.en{background:#fff4e0;border-color:#f0b95e}.pgrp b{font-size:.8rem}
 .pcomp .pnm{min-width:11em;flex:1 1 11em}.pper{width:4.8em;text-align:center}
-.pst{display:inline-block;padding:1px 9px;border-radius:999px;font-size:.78rem;font-weight:700;white-space:nowrap}.pno{background:#eef0f5;color:#666}.pab{background:#fde4e4;color:#b02a2a}.pev{background:#dff3e8;color:#1d7a50}
+.pst{display:inline-block;padding:1px 9px;border-radius:999px;font-size:.78rem;font-weight:700;white-space:nowrap}.pno{background:#eef0f5;color:#666}.pab{background:#fde4e4;color:#b02a2a}.pev{background:#dff3e8;color:#1d7a50}.pen{background:#fff0d6;color:#b36200}
 .psec{margin-bottom:18px}.psec h2{border-bottom:2px solid #3b5bdb;padding-bottom:3px;margin-bottom:4px}.psec h3{margin:12px 0 4px;color:#2a45b0}
-.ptab{font-size:.9rem}.ptab th,.ptab td{text-align:left;padding:5px 8px}.ptab td:first-child,.ptab th:first-child{position:static;background:none}.ptab tr.r-ab td:first-child{color:#b02a2a;font-weight:600}.ptab tr.r-ev td:first-child{color:#1d7a50;font-weight:600}
+.ptab{font-size:.9rem}.ptab th,.ptab td{text-align:left;padding:5px 8px}.ptab td:first-child,.ptab th:first-child{position:static;background:none}.ptab tr.r-ab td:first-child{color:#b02a2a;font-weight:600}.ptab tr.r-en td:first-child{color:#b36200;font-weight:600}.ptab tr.r-ev td:first-child{color:#1d7a50;font-weight:600}
 #sheetIn .psec{break-after:page;page-break-after:always}#sheetIn .psec:last-child{break-after:auto;page-break-after:auto}#sheetIn .ptab{font-size:10.5px}#sheetIn .ptab tr{break-inside:avoid}#sheetIn .ptab td,#sheetIn .ptab th{padding:3px 6px}
 .bfoot{color:#666;font-size:.78em;border-top:1px solid #ddd;padding-top:6px;margin-top:6px}
 @media(max-width:700px){.bil{font-size:14px}}
@@ -171,6 +172,7 @@ pre.sql{background:#1e1e2e;color:#d6e0ff;border-radius:10px;padding:10px;font-si
 <div id="nav"></div>
 <button id="fab3" data-fab3="1" aria-label="Remonter en haut">⬆️ Haut</button>
 <button id="fab2" data-fab2="1" aria-label="Lecture / édition" style="display:none"></button>
+<button id="fabw" data-unab="1" aria-label="Compétences non abordées" title="Compétences non abordées de la période">⚠️</button>
 <button id="fab" data-go="home" aria-label="Index">☰ Index</button>
 <main id="main"></main>
 <div id="toast"></div>
@@ -462,7 +464,7 @@ function jScrollNow() { const r = document.querySelector("#main tr.jnow"); if (r
 function render() {
   jabCache = null;
   invalidate();
-  $("#nav").dataset.top = "1"; $("#nav").innerHTML = `<span class="ntt" title="Retour à l'index">${page === "home" ? "🏠 Ma classe CE1" : (PAGES.find(x => x[0] === page) || ["", ""])[1]}</span><span id="sync"></span>`; $("#fab").style.display = page === "home" ? "none" : ""; if (ptab !== "edit") progRead = ptab; { const f2 = $("#fab2"), on = page === "journal" || page === "prog" || (page === "fiches" && !ficheTable && S.students.length && S.fields.length > 0); f2.style.display = on ? "" : "none"; if (on) f2.textContent = (page === "journal" ? jmode === "read" : page === "fiches" ? fmode === "read" : ptab !== "edit") ? "✏️ Éditer" : "👁️ Lire"; }
+  $("#nav").dataset.top = "1"; $("#nav").innerHTML = `<span class="ntt" title="Retour à l'index">${page === "home" ? "🏠 Ma classe CE1" : (PAGES.find(x => x[0] === page) || ["", ""])[1]}</span><span id="sync"></span>`; $("#fab").style.display = page === "home" ? "none" : ""; $("#fabw").style.display = page === "journal" ? "" : "none"; if (page !== "journal") unab = false; if (ptab !== "edit") progRead = ptab; { const f2 = $("#fab2"), on = page === "journal" || page === "prog" || (page === "fiches" && !ficheTable && S.students.length && S.fields.length > 0); f2.style.display = on ? "" : "none"; if (on) f2.textContent = (page === "journal" ? jmode === "read" : page === "fiches" ? fmode === "read" : ptab !== "edit") ? "✏️ Éditer" : "👁️ Lire"; }
   paintSync();
   const m = $("#main");
   if (page === "home") m.innerHTML = viewHome();
@@ -477,6 +479,16 @@ function render() {
   else if (page === "appel") m.innerHTML = viewAppel();
   else m.innerHTML = viewSettings();
   m.querySelectorAll("textarea.tdta").forEach(tdGrow); fab3Paint();
+  if (unab) m.insertAdjacentHTML("beforeend", unabHtml());
+}
+let unab = false, unabM = "no";
+function unabHtml() {   // fenêtre flottante : compétences de la période du moment pas encore abordées
+  const keys = new Set(); S.subjects.forEach(sj => sj.subs.forEach(sb => (sb.comps || []).forEach(c => periodsOf(c).forEach(q => keys.add(q)))));
+  let p = curPer(); while (!keys.has(p) && +p.slice(1) > 1) p = "P" + (+p.slice(1) - 1);
+  const L = []; S.subjects.forEach(sj => sj.subs.forEach(sb => (sb.comps || []).forEach(c => { if (keysOf(c).includes(p) && perState(c, p).st === unabM) L.push({ sj, sb, c }); })));
+  const by = {}; L.forEach(x => (by[x.sj.name + " › " + x.sb.name] = by[x.sj.name + " › " + x.sb.name] || []).push(x.c));
+  const body = L.length ? Object.entries(by).map(([k, cs]) => `<h4 style="margin:10px 0 4px">${esc(k)}</h4>${cs.map(c => `<div class="row" style="padding:3px 0;border-bottom:1px solid #eee"><span class="sp">${esc(c.name)}${lk(c)}</span>${unabM === "no" ? `<button class="chip" style="padding:3px 8px" data-pen="${c.id}|${p}">En cours</button>` : `<button class="chip" style="padding:3px 8px" data-pen="${c.id}|${p}" title="Remettre en non abordée">↩︎ Non abordée</button>`}<button class="chip" style="padding:3px 8px" data-pab="${c.id}|${p}">Abordé</button></div>`).join("")}`).join("") : `<p class="muted">${unabM === "no" ? "Tout est abordé pour cette période 🎉" : "Aucune compétence en cours."}</p>`;
+  return `<div class="mdlbg" data-unab="0"></div><div class="mdlbox" role="dialog"><div class="row" style="margin-bottom:6px"><h3 class="sp" style="margin:0">⚠️ Période ${p.slice(1)} <span class="muted">(${L.length})</span></h3><button class="btn sm" data-unab="0">✕</button></div><div class="chips" style="margin-bottom:6px">${[["no", "Non abordées"], ["en", "En cours"]].map(([k, l]) => `<button class="chip ${unabM === k ? "on" : ""}" data-unabm="${k}">${l}</button>`).join("")}</div>${body}</div>`;
 }
 function fab3Paint() { const b = $("#fab3"); if (b) b.style.display = window.scrollY > 250 ? "block" : "none"; const f2 = $("#fab2"); b.style.bottom = f2 && f2.style.display !== "none" ? "calc(max(14px,env(safe-area-inset-bottom)) + var(--kb,0px) + 112px)" : ""; }   // sur toutes les pages ; au-dessus du bouton Lire/Éditer quand il est là
 window.addEventListener("scroll", fab3Paint, { passive: true });
@@ -597,17 +609,17 @@ function jabOf(c, p) {   // « abordée » automatique : un bloc du cahier journ
 }
 function perState(c, p) {
   const first = keysOf(c)[0], ev = compEvals(c).filter(e => (e.per || first) === p);
-  const mev = !!((c.evP || {})[p] || (p === first && c.ev)), mab = !!((c.abP || {})[p] || (p === first && c.ab) || jabOf(c, p));
-  return { st: (ev.length || mev) ? "ev" : mab ? "ab" : "no", auto: ev.length > 0, n: ev.length, last: ev.map(e => e.date).sort().pop() || "" };
+  const mev = !!((c.evP || {})[p] || (p === first && c.ev)), mab0 = !!((c.abP || {})[p] || (p === first && c.ab)), men = !!(c.enP || {})[p], aut = jabOf(c, p);
+  return { st: (ev.length || mev) ? "ev" : mab0 ? "ab" : men ? "en" : aut ? "ab" : "no", auto: ev.length > 0, n: ev.length, last: ev.map(e => e.date).sort().pop() || "" };
 }
 function compStatus(c, p) {
   if (p) return perState(c, p);
   const first = keysOf(c)[0], ks = [...new Set([...keysOf(c), ...compEvals(c).map(e => e.per || first)])], ss = ks.map(k => perState(c, k));
   const all = compEvals(c);
-  return { st: ss.every(x => x.st === "ev") ? "ev" : ss.every(x => x.st === "no") ? "no" : "ab", auto: all.length > 0, n: all.length, last: all.map(e => e.date).sort().pop() || "" };
+  return { st: ss.every(x => x.st === "ev") ? "ev" : ss.every(x => x.st === "no") ? "no" : ss.some(x => x.st === "en") ? "en" : "ab", auto: all.length > 0, n: all.length, last: all.map(e => e.date).sort().pop() || "" };
 }
 const pPill = (c, p) => { const x = perState(c, p); return `<span class="pst ${ST[x.st][1]}">${p === "—" ? "" : p + " · "}${x.st === "ev" ? "✓ " : ""}${ST[x.st][0]}${x.n ? ` (${x.n})` : ""}</span>`; };
-const ST = { no: ["Non abordée", "pno"], ab: ["Abordée", "pab"], ev: ["Évaluée", "pev"] };
+const ST = { no: ["Non abordée", "pno"], en: ["En cours", "pen"], ab: ["Abordée", "pab"], ev: ["Évaluée", "pev"] };
 const stPill = s => `<span class="pst ${ST[s.st][1]}">${s.st === "ev" ? "✓ " : ""}${ST[s.st][0]}${s.st === "ev" && s.n ? ` (${s.n})` : ""}</span>`;
 function progStats(sj) {
   let n = 0, ab = 0, ev = 0; sj.subs.forEach(sb => (sb.comps || []).forEach(c => { n++; const s = compStatus(c).st; if (s !== "no") ab++; if (s === "ev") ev++; }));
@@ -660,14 +672,14 @@ function progEdit() {
           ${op ? cs.map((c, k) => { const s = compStatus(c); return `<div class="pcomp ${s.st}" id="pe-${c.id}"><span class="pmv">${mvBtns("cp", sj.id + "|" + sb.id + "|" + c.id, k, cs.length)}</span>
             <input type="text" class="sp pnm" value="${esc(c.name)}" data-pn="cp|${sj.id}|${sb.id}|${c.id}">
             <input type="text" class="pper" value="${esc(c.per || "")}" placeholder="P1" title="Période(s) : P1, P2, P3… (champ libre)" data-pper="${c.id}">
-<span class="pbts">${keysOf(c).map(p => { const x = perState(c, p); return `<span class="pgrp ${x.st}">${p === "—" ? "" : `<b>${p}</b>`}<button class="chip ${x.st !== "no" ? "on" : ""}" style="padding:4px 9px" data-pab="${c.id}|${p}" title="Compétence abordée">Abordé</button><button class="chip ${x.st === "ev" ? "on" : ""}" style="padding:4px 9px" data-pev="${c.id}|${p}" title="${x.auto ? "Évaluée automatiquement : une note est rattachée (période " + p + ")" : "Marquer comme évaluée"}">${x.auto ? "Évalué ⚙" : "Évalué"}</button></span>`; }).join("")}</span>
+<span class="pbts">${keysOf(c).map(p => { const x = perState(c, p); return `<span class="pgrp ${x.st}">${p === "—" ? "" : `<b>${p}</b>`}<button class="chip ${x.st === "en" ? "on" : ""}" style="padding:4px 9px" data-pen="${c.id}|${p}" title="Compétence en cours d'apprentissage">En cours</button><button class="chip ${x.st === "ab" || x.st === "ev" ? "on" : ""}" style="padding:4px 9px" data-pab="${c.id}|${p}" title="Compétence abordée">Abordé</button><button class="chip ${x.st === "ev" ? "on" : ""}" style="padding:4px 9px" data-pev="${c.id}|${p}" title="${x.auto ? "Évaluée automatiquement : une note est rattachée (période " + p + ")" : "Marquer comme évaluée"}">${x.auto ? "Évalué ⚙" : "Évalué"}</button></span>`; }).join("")}</span>
             <button class="chip ${c.url ? "on" : ""}" style="padding:4px 9px" data-plink="${c.id}" title="${c.url ? esc(c.url) : "Ajouter un lien vers une ressource"}">🔗${c.url ? "" : " Lien"}</button>${c.url ? `<a class="plk" href="${esc(c.url)}" target="_blank" rel="noopener" title="Ouvrir le lien">↗</a>` : ""}<button class="btn sm dan" data-pdel="cp|${sj.id}|${sb.id}|${c.id}">✕</button></div>`; }).join("") + `<div class="row" style="margin:6px 0 0 8px"><input type="text" id="add-p-cp-${sb.id}" placeholder="Nouvelle compétence" class="sp"><button class="btn sm pri" data-padd="cp|${sj.id}|${sb.id}">+ Compétence</button></div>` : ""}</div>`;
       }).join("") + `<div class="row" style="margin-top:8px"><input type="text" id="add-p-sb-${sj.id}" placeholder="Nouvelle sous-matière" class="sp"><button class="btn sm" data-padd="sb|${sj.id}">+ Sous-matière</button></div>` : ""}</div>`;
   }).join("");
   const bar = `<div class="row" style="margin-bottom:8px"><button class="btn sm" data-pall="close">⇧ Tout replier</button><button class="btn sm" data-pall="open">⇩ Tout déplier</button></div>`;
   return note + bar + subjects + `<div class="card"><div class="row"><input type="text" id="add-p-sj" placeholder="Nouvelle matière" class="sp"><button class="btn pri" data-padd="sj">+ Matière</button></div></div>`;
 }
-const legend = `<span class="pst pno">Non abordée</span> <span class="pst pab">Abordée</span> <span class="pst pev">✓ Évaluée</span>`;
+const legend = `<span class="pst pno">Non abordée</span> <span class="pst pen">En cours</span> <span class="pst pab">Abordée</span> <span class="pst pev">✓ Évaluée</span>`;
 function progMatiere() {
   const list = pfSubj === "all" ? S.subjects : S.subjects.filter(s => s.id === pfSubj), cur = list.length === 1 ? list[0] : null;
   if (!cur || !cur.subs.some(b => b.id === pfSb)) pfSb = "all";
@@ -680,12 +692,12 @@ function progPeriode() {
   const map = {}; S.subjects.forEach(sj => sj.subs.forEach(sb => (sb.comps || []).forEach(c => { const ps = periodsOf(c); (ps.length ? ps : ["—"]).forEach(p => ((map[p] = map[p] || []).push({ sj, sb, c }))); })));
   const keys = Object.keys(map).sort((a, b) => a === "—" ? 1 : b === "—" ? -1 : a.localeCompare(b));
   const shown = pfPer === "all" ? keys : keys.filter(k => k === pfPer);
-  const stOk = (c, k) => { const t = compStatus(c, k).st; return pfSt === "all" || (pfSt === "no" ? t === "no" : t === "ab"); };
+  const stOk = (c, k) => { const t = compStatus(c, k).st; return pfSt === "all" || (pfSt === "no" ? t === "no" : pfSt === "en" ? t === "en" : (t === "ab" || t === "en")); };
   const body = shown.map(k => { const all = map[k], items = all.filter(x => stOk(x.c, k)), bySj = {}; if (!items.length) return pfSt === "all" ? "" : `<section class="psec"><h2>${k === "—" ? "Sans période" : "Période " + k.slice(1)}</h2><p class="muted">Rien à afficher pour ce filtre 🎉</p></section>`; items.forEach(x => ((bySj[x.sj.id + "|" + x.sb.id] = bySj[x.sj.id + "|" + x.sb.id] || { sj: x.sj, sb: x.sb, cs: [] }).cs.push(x.c)));
     const ev = items.filter(x => compStatus(x.c, k).st === "ev").length;
     return `<section class="psec"><h2>${k === "—" ? "Sans période" : "Période " + k.slice(1)}</h2><div class="muted" style="margin-bottom:6px">${items.length} compétence${items.length > 1 ? "s" : ""}${pfSt === "all" ? "" : ` sur ${all.length}`} · ${items.filter(x => compStatus(x.c, k).st !== "no").length} abordées · ${ev} évaluées</div>
       ${Object.values(bySj).map(g => `<h3 ${goAt(g.sj.id, g.sb.id)}>${esc(g.sj.name)} <span style="color:#777;font-weight:500">› ${esc(g.sb.name)}</span></h3><table class="ptab"><tbody>${g.cs.map(c => `<tr class="r-${compStatus(c, k).st}" ${goAt(g.sj.id, g.sb.id, c.id)}><td>${esc(c.name)}${lk(c)}</td><td style="width:11em">${stPill(compStatus(c, k))}</td></tr>`).join("")}</tbody></table>`).join("")}</section>`; }).join("");
-  return { title: "Progression par période", filter: `<label>Afficher : <select data-pf="st"><option value="all" ${pfSt === "all" ? "selected" : ""}>Toutes les compétences</option><option value="no" ${pfSt === "no" ? "selected" : ""}>Non abordées seulement</option><option value="ab" ${pfSt === "ab" ? "selected" : ""}>Reste à évaluer (abordées, pas encore évaluées)</option></select></label> <label>Période : <select data-pf="per"><option value="all">Toutes (une page par période)</option>${keys.map(k => `<option value="${k}" ${k === pfPer ? "selected" : ""}>${k === "—" ? "Sans période" : "Période " + k.slice(1)}</option>`).join("")}</select></label>`, body: body || '<p class="muted">Aucune compétence.</p>' };
+  return { title: "Progression par période", filter: `<label>Afficher : <select data-pf="st"><option value="all" ${pfSt === "all" ? "selected" : ""}>Toutes les compétences</option><option value="no" ${pfSt === "no" ? "selected" : ""}>Non abordées seulement</option><option value="en" ${pfSt === "en" ? "selected" : ""}>En cours seulement</option><option value="ab" ${pfSt === "ab" ? "selected" : ""}>Reste à évaluer (abordées, pas encore évaluées)</option></select></label> <label>Période : <select data-pf="per"><option value="all">Toutes (une page par période)</option>${keys.map(k => `<option value="${k}" ${k === pfPer ? "selected" : ""}>${k === "—" ? "Sans période" : "Période " + k.slice(1)}</option>`).join("")}</select></label>`, body: body || '<p class="muted">Aucune compétence.</p>' };
 }
 function progViewCard(v) {
   return `<div class="card"><div class="row" style="margin-bottom:10px">${v.filter}<span class="sp"></span><span class="muted">${v.nolegend ? "" : legend}</span><button class="btn pri" data-act="printProg">🖨️ Imprimer</button></div>${v.body}</div>`;
@@ -1038,7 +1050,7 @@ function viewJournal() {
     <div style="font-size:1.15rem;font-weight:800;margin:8px 0 6px;">${dLong(jdate)}</div>${jmode === "edit" ? `<input type="text" data-jtitle value="${esc(jTitle(jdate))}" placeholder="✍️ Titre du cahier journal (facultatif) — conservé d'un jour à l'autre, modifiable à tout moment" style="width:100%;margin-bottom:8px;font-family:var(--cursive);font-size:1.15rem"><div class="row" style="margin:-2px 0 8px;gap:7px"><span class="muted">🎨 Couleur du titre</span>${JPAL.map(c => `<button class="swc ${(S.jtcol || "") === c ? "on" : ""}" data-jtcol="${c || "-"}" style="background:${c || "#fff"}" title="${c ? "Colorer le titre" : "Couleur par défaut"}"></button>`).join("")}</div>` : ""}<div class="chips">${chips}</div>${jEvents(jdate)}${jmode === "read" ? `<div class="row" style="margin-top:10px;gap:6px"><button class="btn sm" data-act="printJournalDay" title="Imprimer / PDF la journée">🖨️ Journée</button><button class="btn sm" data-act="printJournalWeek" title="Imprimer la semaine">🖨️ Semaine</button>${S.printUrl ? `<a class="btn sm" href="${esc(fixUrl(S.printUrl))}" target="_blank" rel="noopener" title="Ouvrir mon dossier d'impression (cloud)" style="font-size:1.1rem">☁️</a>` : ""}</div>` : ""}</div>`;
   const out = `<div class="row" style="margin-top:10px"><button class="btn pri" data-act="printJournalDay">🖨️ Imprimer / PDF la journée</button><button class="btn" data-act="printJournalWeek">🖨️ Imprimer la semaine</button>${S.printUrl ? `<a class="btn" href="${esc(fixUrl(S.printUrl))}" target="_blank" rel="noopener" title="Ouvrir ton dossier d'impression dans le cloud">☁️ Dossier d'impression</a>${jmode === "edit" ? '<button class="btn sm" data-jprinturl="1" title="Changer ou retirer le lien">✏️</button>' : ""}` : jmode === "edit" ? '<button class="btn" data-jprinturl="1" title="Ajouter le lien vers ton dossier d\'impression dans le cloud">☁️ Lien du dossier d\'impression</button>' : ""}</div>`;
   if (jmode === "read") return head + (L.length || (S.jtitles || {})[jdate] ? `<div class="card jread">${jTitleHtml(jdate)}${jTable(jdate, true)}</div>` : `<div class="card muted">Rien de prévu pour cette journée. Passe en <b>✏️ Édition</b> pour la remplir${prev.length ? " ou copier une journée précédente" : ""}.</div>`) + "";
-  const copy = prev.length ? `<div class="card"><div class="row"><b>📋 Copier la configuration d'une autre journée</b><select data-jsrc class="sp">${prev.map(d => `<option value="${d}" ${d === src ? "selected" : ""}>${dLong(d)} (${jget(d).length} bloc${jget(d).length > 1 ? "s" : ""})</option>`).join("")}</select><label><input type="checkbox" data-jwt ${jwt ? "checked" : ""}> avec textes et liens</label><button class="btn" data-jcopy>Copier ici</button></div><div class="muted" style="margin-top:4px">Reprend les créneaux, titres et matières (et séparateurs) ; tu modifies ensuite ce que tu veux. Par défaut : la dernière journée remplie.</div></div>` : "";
+  const copy = prev.length ? `<div class="card"><div class="row"><b>📋 Copier la configuration d'une autre journée</b><select data-jsrc class="sp">${prev.map(d => `<option value="${d}" ${d === src ? "selected" : ""}>${dLong(d)} (${(S.journal[d] || []).filter(x => !x.rid).length} bloc${(S.journal[d] || []).filter(x => !x.rid).length > 1 ? "s" : ""})</option>`).join("")}</select><label><input type="checkbox" data-jwt ${jwt ? "checked" : ""}> avec textes et liens</label><button class="btn" data-jcopy>Copier ici</button></div><div class="muted" style="margin-top:4px">Reprend les créneaux, titres et matières (et séparateurs) ; tu modifies ensuite ce que tu veux. Par défaut : la dernière journée remplie.</div></div>` : "";
   return jcpHtml() + head + (L.length ? "" : copy) + (L.map((b, i) => jblock(b, i, L.length) + `<div class="jins"><button class="btn sm pri" data-jadd="bloc||${b.id}" title="Ajouter un bloc juste après celui-ci">+ Bloc ici</button><button class="btn sm" data-jadd="sep|Récréation|${b.id}">☕ Récré</button><button class="btn sm" data-jadd="sep|Pause déjeuner|${b.id}">🍽️ Déjeuner</button><button class="btn sm" data-jadd="sep||${b.id}">➖ Séparateur</button></div>`).join("") || `<div class="card muted">Aucun bloc pour cette journée. Ajoute le premier ci-dessous${prev.length ? " ou copie une journée précédente" : ""}.</div>`) + (L.length ? copy : "") +
     `<div class="card"><div class="row">${L.length ? "" : `<button class="btn pri" data-jadd="bloc">+ Bloc</button><button class="btn" data-jadd="sep|Récréation">☕ + Récréation</button><button class="btn" data-jadd="sep|Pause déjeuner">🍽️ + Pause déjeuner</button><button class="btn" data-jadd="sep|">➖ + Séparateur</button>`}<span class="sp"></span><button class="btn sm" data-jsort title="Range les blocs par heure de début">⏱️ Trier par horaire</button></div>${out}</div>`;
 }
@@ -1764,7 +1776,7 @@ const actions = {
 
 /* ---------- Événements ---------- */
 document.addEventListener("click", ev => {
-  const t = ev.target.closest("[data-go],[data-ancat],[data-cat],[data-cv],[data-nav],[data-mdl],[data-hsec],[data-aview],[data-anoff],[data-nsel],[data-nstep],[data-jcp],[data-jrec],[data-jrecd],[data-jrecall],[data-jrecok],[data-jrecstop],[data-jprinturl],[data-jcpgo],[data-jplus],[data-jmdel],[data-dec2],[data-decm2],[data-inc],[data-dec],[data-decm],[data-lend],[data-lend2],[data-inc2],[data-tbl],[data-nt],[data-edit],[data-deval],[data-an],[data-act],[data-ds],[data-di],[data-dsj],[data-dsb],[data-add],[data-addsb],[data-addcp],[data-dcp],[data-dfield],[data-bdet],[data-fab3],[data-ap],[data-apn],[data-apf],[data-apv],[data-tdim],[data-fmove],[data-fgo],[data-fan],[data-sort],[data-ptab],[data-ptog],[data-pmv],[data-pdel],[data-padd],[data-pab],[data-pev],[data-plink],[data-pall],[data-eexcl],[data-psv],[data-jadd],[data-jmv],[data-jdel],[data-jlink],[data-jldel],[data-jnav],[data-jday],[data-jsort],[data-sday],[data-jmode],[data-jcopy],[data-cmv],[data-cday],[data-cedit],[data-cdel],[data-cadd],[data-ccancel],[data-cimpdel],[data-pgo],[data-jgo],[data-fab2],[data-jcol],[data-jtcol],[data-top],[data-gofiche],[data-tdadd],[data-tdfold],[data-tddel],[data-tdmv],[data-tdtop],[data-tdnewbtn],[data-tdchk],[data-tdx],[data-tdclear],[data-tdsd],[data-tdst],[data-tdall],[data-tdmiss]");
+  const t = ev.target.closest("[data-go],[data-unab],[data-unabm],[data-ancat],[data-cat],[data-cv],[data-nav],[data-mdl],[data-hsec],[data-aview],[data-anoff],[data-nsel],[data-nstep],[data-jcp],[data-jrec],[data-jrecd],[data-jrecall],[data-jrecok],[data-jrecstop],[data-jprinturl],[data-jcpgo],[data-jplus],[data-jmdel],[data-dec2],[data-decm2],[data-inc],[data-dec],[data-decm],[data-lend],[data-lend2],[data-inc2],[data-tbl],[data-nt],[data-edit],[data-deval],[data-an],[data-act],[data-ds],[data-di],[data-dsj],[data-dsb],[data-add],[data-addsb],[data-addcp],[data-dcp],[data-dfield],[data-bdet],[data-fab3],[data-ap],[data-apn],[data-apf],[data-apv],[data-tdim],[data-fmove],[data-fgo],[data-fan],[data-sort],[data-ptab],[data-ptog],[data-pmv],[data-pdel],[data-padd],[data-pab],[data-pen],[data-pev],[data-plink],[data-pall],[data-eexcl],[data-psv],[data-jadd],[data-jmv],[data-jdel],[data-jlink],[data-jldel],[data-jnav],[data-jday],[data-jsort],[data-sday],[data-jmode],[data-jcopy],[data-cmv],[data-cday],[data-cedit],[data-cdel],[data-cadd],[data-ccancel],[data-cimpdel],[data-pgo],[data-jgo],[data-fab2],[data-jcol],[data-jtcol],[data-top],[data-gofiche],[data-tdadd],[data-tdfold],[data-tddel],[data-tdmv],[data-tdtop],[data-tdnewbtn],[data-tdchk],[data-tdx],[data-tdclear],[data-tdsd],[data-tdst],[data-tdall],[data-tdmiss]");
   if (!t) return; const d = t.dataset;
   if (d.nt2) { ntab = "histo"; hsec = "auto"; return go("notes"); }
   if (d.go) return go(d.go);
@@ -1779,6 +1791,8 @@ document.addEventListener("click", ev => {
   if (d.lend) { const k = sel.matos + "::" + d.lend; if (S.lent[k]) delete S.lent[k]; else { S.lent[k] = true; bump(sel.matos, "matos", d.lend, 1); } save(); return render(); }
   if (d.lend2) { const [s, it] = d.lend2.split("|"), k = s + "::" + it; if (S.lent[k]) delete S.lent[k]; else { S.lent[k] = true; bump(s, "matos", it, 1); } save(); return render(); }
   if (d.nt) { ntab = d.nt; return render(); }
+  if (d.unabm) { unabM = d.unabm; return render(); }
+  if (d.unab !== undefined) { unab = d.unab === "1"; return render(); }
   if (d.ancat) { anCat = d.ancat; return render(); }
   if (d.an) { anSel = d.an; mdl = null; return render(); }
   if (d.edit) { const e = S.evals.find(x => x.id === d.edit); if (e) { draft = { subjectId: e.subjectId, subId: e.subId, compId: e.compId || "", per: e.per || "", label: e.label, date: e.date, max: e.max, coef: e.coef ?? 1, excl: !!e.excl, grades: { ...e.grades }, editId: e.id }; saveDraft(); ntab = "saisie"; render(); } return; }
@@ -1854,8 +1868,10 @@ document.addEventListener("click", ev => {
   if (d.jmode) { jmode = d.jmode; try { localStorage.setItem("classe-jmode", jmode); } catch (e) { } return render(); }
   if (d.jcopy !== undefined) {
     const prev = jPrevDays(), src = prev.includes(jsrc) ? jsrc : prev[0]; if (!src) return toast("Aucune journée à copier");
-    if (jget(jdate).length && !confirm("Cette journée contient déjà des blocs. Les remplacer par la copie du " + frDate(src) + " ?")) return;
-    S.journal[jdate] = JSON.parse(JSON.stringify(S.journal[src])).map(b => { b.id = uid(); delete b.dailyOf; delete b.rid; if (!jwt && b.type !== "sep") { b.text = ""; b.links = []; } return b; });
+    const cur = jget(jdate), own = cur.filter(x => !x.rid);   // les blocs récurrents de la journée sont déjà là : on ne les copie pas, on ne les remplace pas
+    if (own.length && !confirm("Cette journée contient déjà des blocs. Les remplacer par la copie du " + frDate(src) + " ?")) return;
+    const fresh = JSON.parse(JSON.stringify((S.journal[src] || []).filter(x => !x.rid))).map(b => { b.id = uid(); delete b.dailyOf; if (!jwt && b.type !== "sep") { b.text = ""; b.links = []; } return b; });
+    S.journal[jdate] = [...cur.filter(x => x.rid), ...fresh]; jSortDay(S.journal[jdate]);
     save(); render(); return toast("Journée copiée : modifie maintenant ce que tu veux ✓"); }
   if (d.jadd) {
     const [kind, label, after] = d.jadd.split("|"), arr = ((S.journal = S.journal || {})[jdate] = S.journal[jdate] || []);
@@ -1897,13 +1913,17 @@ document.addEventListener("click", ev => {
     if (u && !/^https?:\/\//i.test(u)) return toast("Le lien doit commencer par http ou https");
     if (u) c.url = u; else delete c.url; save(); return render();
   }
+  if (d.pen) { const [cid, p] = d.pen.split("|"), c = findComp(cid); if (!c) return; c.abP = c.abP || {}; c.enP = c.enP || {}; const x = perState(c, p);
+    if (x.st === "ev") return toast(x.auto ? "Déjà évaluée (une note lui est rattachée)" : "Retire d'abord « Évalué »");
+    const first = keysOf(c)[0]; if (c.ab) { c.abP[first] = 1; delete c.ab; }
+    if (c.enP[p]) delete c.enP[p]; else { c.enP[p] = 1; c.abP[p] = 0; } save(); return render(); }
   if (d.pab || d.pev) {
     const [cid, p] = (d.pab || d.pev).split("|"), c = findComp(cid); if (!c) return;
     const first = keysOf(c)[0]; c.abP = c.abP || {}; c.evP = c.evP || {};
     if (c.ab) { c.abP[first] = 1; delete c.ab; } if (c.ev) { c.evP[first] = 1; delete c.ev; }
     const x = perState(c, p);
-    if (d.pab) { if (jabOf(c, p) && !c.abP[p]) return toast("Abordée automatiquement : un bloc du cahier journal lui est rattaché"); if (x.st === "ev") return toast(x.auto ? "Déjà évaluée (une note lui est rattachée)" : "Retire d'abord « Évalué »"); c.abP[p] = c.abP[p] ? 0 : 1; }
-    else { if (x.auto) return toast("Évaluée automatiquement : une note est rattachée à cette compétence"); c.evP[p] = c.evP[p] ? 0 : 1; if (c.evP[p]) c.abP[p] = 1; }
+    if (d.pab) { if (jabOf(c, p) && !c.abP[p] && !(c.enP || {})[p]) return toast("Abordée automatiquement : un bloc du cahier journal lui est rattaché"); if (x.st === "ev") return toast(x.auto ? "Déjà évaluée (une note lui est rattachée)" : "Retire d'abord « Évalué »"); c.abP[p] = c.abP[p] ? 0 : 1; if (c.abP[p] && c.enP) delete c.enP[p]; }
+    else { if (x.auto) return toast("Évaluée automatiquement : une note est rattachée à cette compétence"); c.evP[p] = c.evP[p] ? 0 : 1; if (c.evP[p]) { c.abP[p] = 1; if (c.enP) delete c.enP[p]; } }
     save(); return render();
   }
   if (d.pmv) { const [kind, ...r] = d.pmv.split("|"), k = +r.pop(); let arr, id;
@@ -2027,7 +2047,7 @@ document.addEventListener("input", ev => {
 });
 
 setInterval(() => { if (!document.hidden && page === "journal" && jmode === "read" && jNowId(jdate) !== jLastNow) render(); }, 30000);   // la surbrillance suit l'heure
-document.addEventListener("keydown", ev => { if (ev.key === "Escape" && (mdl || aview)) { mdl = null; aview = ""; render(); return; } if (ev.key === "Enter" && ev.target.dataset && ev.target.dataset.tdnew) { ev.preventDefault(); const b = document.querySelector(`[data-tdnewbtn="${ev.target.dataset.tdnew}"]`); b && b.click(); } });
+document.addEventListener("keydown", ev => { if (ev.key === "Escape" && (mdl || aview || unab)) { mdl = null; aview = ""; unab = false; render(); return; } if (ev.key === "Enter" && ev.target.dataset && ev.target.dataset.tdnew) { ev.preventDefault(); const b = document.querySelector(`[data-tdnewbtn="${ev.target.dataset.tdnew}"]`); b && b.click(); } });
 render(); updDraftMean();
 if (lockedNow()) showLock(); else if (cloudOn()) pull(false);
 </script>
